@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Understanding Stable Diffusion - Educational Guide</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px 20px;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .attribution {
+            background: #f0f0f0;
+            padding: 15px;
+            margin: 20px;
+            border-left: 4px solid #667eea;
+            border-radius: 4px;
+            font-size: 0.9em;
+        }
+
+        .attribution a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .attribution a:hover {
+            text-decoration: underline;
+        }
+
+        main {
+            padding: 40px;
+        }
+
+        section {
+            margin-bottom: 40px;
+        }
+
+        h2 {
+            color: #667eea;
+            font-size: 2em;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        h3 {
+            color: #764ba2;
+            font-size: 1.5em;
+            margin-top: 25px;
+            margin-bottom: 15px;
+        }
+
+        p {
+            margin-bottom: 15px;
+            text-align: justify;
+        }
+
+        .component-box {
+            background: #f9f9f9;
+            border: 2px solid #667eea;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .component-box h4 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        ul, ol {
+            margin-left: 30px;
+            margin-bottom: 15px;
+        }
+
+        li {
+            margin-bottom: 10px;
+        }
+
+        .highlight {
+            background: #fffbea;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #764ba2;
+            margin: 20px 0;
+        }
+
+        .diagram-placeholder {
+            background: #e8e8e8;
+            border: 2px dashed #999;
+            padding: 40px;
+            text-align: center;
+            margin: 20px 0;
+            border-radius: 8px;
+            color: #666;
+        }
+
+        .resources {
+            background: #f0f7ff;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+
+        .resources a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .resources a:hover {
+            text-decoration: underline;
+        }
+
+        footer {
+            background: #f5f5f5;
+            padding: 20px;
+            text-align: center;
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .key-takeaway {
+            background: #e8f5e9;
+            border-left: 4px solid #4caf50;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+
+        .warning {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Understanding Stable Diffusion</h1>
+            <p>A Guide to AI Image Generation Architecture</p>
+        </header>
+
+        <div class="attribution">
+            <strong>📚 Educational Resource:</strong> This guide is based on concepts from 
+            <a href="https://jalammar.github.io/illustrated-stable-diffusion/" target="_blank">
+            "The Illustrated Stable Diffusion" by Jay Alammar</a>. 
+            Please visit the original article for comprehensive visualizations and detailed explanations.
+            <br><br>
+            <strong>License:</strong> Original work is under 
+            <a href="http://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">
+            Creative Commons Attribution-NonCommercial-ShareAlike 4.0</a>
+        </div>
+
+        <main>
+            <!-- Introduction -->
+            <section>
+                <h2>Introduction to Stable Diffusion</h2>
+                <p>
+                    Stable Diffusion is a breakthrough in AI image generation that allows users to create 
+                    striking visuals from text descriptions. Released in 2022, it represented a significant 
+                    milestone because it made high-performance image generation accessible to the masses.
+                </p>
+                <p>
+                    Unlike previous image generation models, Stable Diffusion can:
+                </p>
+                <ul>
+                    <li>Generate images from text descriptions (text-to-image)</li>
+                    <li>Modify existing images based on text prompts (image-to-image)</li>
+                    <li>Run on consumer hardware with reasonable resource requirements</li>
+                    <li>Produce high-quality images at high speeds</li>
+                </ul>
+            </section>
+
+            <!-- Components Overview -->
+            <section>
+                <h2>Core Components of Stable Diffusion</h2>
+                <p>
+                    Stable Diffusion is not a monolithic model but rather a system composed of several 
+                    specialized components working together. Each component handles a specific part of the 
+                    image generation process.
+                </p>
+
+                <h3>The Three Main Components</h3>
+
+                <div class="component-box">
+                    <h4>1. CLIP Text Encoder</h4>
+                    <p>
+                        <strong>Purpose:</strong> Converts text prompts into numerical representations that the 
+                        image generator can understand.
+                    </p>
+                    <p>
+                        <strong>How it works:</strong> The text encoder is a specialized Transformer language model 
+                        (specifically the text encoder from OpenAI's CLIP model) that converts your input text into 
+                        token embeddings—numerical vectors that capture the semantic meaning of each word.
+                    </p>
+                    <p>
+                        <strong>Output:</strong> 77 token embeddings, each with 768 dimensions
+                    </p>
+                </div>
+
+                <div class="component-box">
+                    <h4>2. U-Net + Scheduler (Image Information Creator)</h4>
+                    <p>
+                        <strong>Purpose:</strong> The "secret sauce" of Stable Diffusion. This is where most of the 
+                        performance gains come from compared to previous models.
+                    </p>
+                    <p>
+                        <strong>How it works:</strong> Operates in latent space (compressed image representation) over 
+                        multiple steps (typically 50-100), gradually refining the image information based on the text embeddings.
+                    </p>
+                    <p>
+                        <strong>Key insight:</strong> Working in compressed latent space instead of full pixel space is 
+                        what makes Stable Diffusion fast and efficient.
+                    </p>
+                </div>
+
+                <div class="component-box">
+                    <h4>3. Autoencoder Decoder</h4>
+                    <p>
+                        <strong>Purpose:</strong> Converts the processed latent representation back into a viewable image.
+                    </p>
+                    <p>
+                        <strong>How it works:</strong> Takes the refined latent array (dimensions: 4×64×64) and decodes 
+                        it into the final pixel image (dimensions: 3×512×512, representing RGB channels and image dimensions).
+                    </p>
+                    <p>
+                        <strong>Process:</strong> Runs only once at the end to "paint" the final image.
+                    </p>
+                </div>
+
+                <svg viewBox="0 0 1000 200" style="width: 100%; height: auto; margin: 20px 0; border: 1px solid #ddd; border-radius: 8px;">
+                    <!-- Flow diagram -->
+                    <defs>
+                        <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+                            <polygon points="0 0, 10 3, 0 6" fill="#667eea" />
+                        </marker>
+                    </defs>
+                    
+                    <!-- Text input -->
+                    <rect x="20" y="60" width="120" height="80" fill="#e3f2fd" stroke="#667eea" stroke-width="2" rx="5"/>
+                    <text x="80" y="105" text-anchor="middle" font-size="14" font-weight="bold" fill="#333">Text Prompt</text>
+                    
+                    <!-- Arrow 1 -->
+                    <line x1="140" y1="100" x2="170" y2="100" stroke="#667eea" stroke-width="2" marker-end="url(#arrowhead)"/>
+                    
+                    <!-- CLIP Encoder -->
+                    <rect x="170" y="60" width="130" height="80" fill="#f3e5f5" stroke="#764ba2" stroke-width="2" rx="5"/>
+                    <text x="235" y="95" text-anchor="middle" font-size="13" font-weight="bold" fill="#333">CLIP Text</text>
+                    <text x="235" y="115" text-anchor="middle" font-size="13" font-weight="bold" fill="#333">Encoder</text>
+                    
+                    <!-- Arrow 2 -->
+                    <line x1="300" y1="100" x2="330" y2="100" stroke="#667eea" stroke-width="2" marker-end="url(#arrowhead)"/>
+                    
+                    <!-- U-Net -->
+                    <rect x="330" y="60" width="130" height="80" fill="#fff3e0" stroke="#f57c00" stroke-width="2" rx="5"/>
+                    <text x="395" y="95" text-anchor="middle" font-size="13" font-weight="bold" fill="#333">U-Net +</text>
+                    <text x="395" y="115" text-anchor="middle" font-size="13" font-weight="bold" fill="#333">Scheduler</text>
+                    
+                    <!-- Arrow 3 -->
+                    <line x1="460" y1="100" x2="490" y2="100" stroke="#667eea" stroke-width="2" marker-end="url(#arrowhead)"/>
+                    
+                    <!-- Autoencoder Decoder -->
+                    <rect x="490" y="60" width="130" height="80" fill="#e8f5e9" stroke="#4caf50" stroke-width="2" rx="5"/>
+                    <text x="555" y="95" text-anchor="middle" font-size="13" font-weight="bold" fill="#333">Autoencoder</text>
+                    <text x="555" y="115" text-anchor="middle" font-size="13" font-weight="bold" fill="#333">Decoder</text>
+                    
+                    <!-- Arrow 4 -->
+                    <line x1="620" y1="100" x2="650" y2="100" stroke="#667eea" stroke-width="2" marker-end="url(#arrowhead)"/>
+                    
+                    <!-- Output Image -->
+                    <rect x="650" y="60" width="120" height="80" fill="#fce4ec" stroke="#c2185b" stroke-width="2" rx="5"/>
+                    <text x="710" y="105" text-anchor="middle" font-size="14" font-weight="bold" fill="#333">Generated Image</text>
+                    
+                    <!-- Data representation labels -->
+                    <text x="235" y="160" text-anchor="middle" font-size="11" fill="#666">Token embeddings</text>
+                    <text x="235" y="175" text-anchor="middle" font-size="11" fill="#666">(77 × 768)</text>
+                    
+                    <text x="395" y="160" text-anchor="middle" font-size="11" fill="#666">Latent space</text>
+                    <text x="395" y="175" text-anchor="middle" font-size="11" fill="#666">(4 × 64 × 64)</text>
+                    
+                    <text x="555" y="160" text-anchor="middle" font-size="11" fill="#666">Pixel space</text>
+                    <text x="555" y="175" text-anchor="middle" font-size="11" fill="#666">(3 × 512 × 512)</text>
+                </svg>
+            </section>
+
+            <!-- Diffusion Process -->
+            <section>
+                <h2>Understanding Diffusion</h2>
+                <p>
+                    The term "diffusion" in Stable Diffusion refers to a specific process of gradually 
+                    transforming random noise into meaningful image information through multiple steps.
+                </p>
+
+                <h3>How Diffusion Works: Training</h3>
+                <p>
+                    During training, diffusion models learn by processing images with increasing amounts of noise:
+                </p>
+                <ol>
+                    <li>Start with a clean image</li>
+                    <li>Add a small amount of random noise to it</li>
+                    <li>Add more noise in the next step</li>
+                    <li>Continue until the image becomes pure noise</li>
+                    <li>Create many training examples from this progression</li>
+                </ol>
+
+                <p>
+                    The model learns to be a "noise predictor"—given a noisy image and information about 
+                    which step in the diffusion process we're at, it learns to predict what noise was added.
+                </p>
+
+                <h3>How Diffusion Works: Image Generation</h3>
+                <p>
+                    The reverse process generates images:
+                </p>
+                <ol>
+                    <li>Start with random noise (pure noise latent)</li>
+                    <li>Use the noise predictor to estimate and remove noise</li>
+                    <li>Repeat this process for multiple steps</li>
+                    <li>Each step moves closer to a real image</li>
+                    <li>After 50-100 steps, you have a coherent image</li>
+                </ol>
+
+                <svg viewBox="0 0 1000 250" style="width: 100%; height: auto; margin: 20px 0; border: 1px solid #ddd; border-radius: 8px; background: white;">
+                    <defs>
+                        <filter id="noise">
+                            <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="4" result="noise" />
+                            <feDisplacementMap in="SourceGraphic" in2="noise" scale="20" />
+                        </filter>
+                        <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" style="stop-color:#666;stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:#ddd;stop-opacity:1" />
+                        </linearGradient>
+                    </defs>
+                    
+                    <!-- Title -->
+                    <text x="500" y="25" text-anchor="middle" font-size="16" font-weight="bold" fill="#333">Diffusion Process: Noise to Image (50 Steps)</text>
+                    
+                    <!-- Step 1: Pure Noise -->
+                    <g>
+                        <rect x="20" y="50" width="80" height="80" fill="url(#grad1)" stroke="#999" stroke-width="1"/>
+                        <circle cx="60" cy="90" r="2" fill="white" opacity="0.5"/>
+                        <circle cx="40" cy="70" r="1.5" fill="white" opacity="0.6"/>
+                        <circle cx="70" cy="110" r="1.5" fill="white" opacity="0.4"/>
+                        <circle cx="50" cy="120" r="1" fill="white" opacity="0.5"/>
+                        <text x="60" y="145" text-anchor="middle" font-size="12" fill="#333">Step 1</text>
+                        <text x="60" y="160" text-anchor="middle" font-size="11" fill="#666">Pure Noise</text>
+                    </g>
+                    
+                    <!-- Step 10: Emerging shapes -->
+                    <g>
+                        <rect x="130" y="50" width="80" height="80" fill="#e0e0e0" stroke="#999" stroke-width="1"/>
+                        <ellipse cx="160" cy="85" rx="20" ry="25" fill="#bbb" opacity="0.7"/>
+                        <ellipse cx="160" cy="110" rx="25" ry="15" fill="#aaa" opacity="0.6"/>
+                        <circle cx="150" cy="70" r="8" fill="#999" opacity="0.5"/>
+                        <text x="170" y="145" text-anchor="middle" font-size="12" fill="#333">Step 10</text>
+                        <text x="170" y="160" text-anchor="middle" font-size="11" fill="#666">Emerging Form</text>
+                    </g>
+                    
+                    <!-- Step 25: More detail -->
+                    <g>
+                        <rect x="240" y="50" width="80" height="80" fill="#d0d0d0" stroke="#999" stroke-width="1"/>
+                        <!-- Simple head -->
+                        <circle cx="270" cy="70" r="12" fill="#999"/>
+                        <!-- Body -->
+                        <ellipse cx="270" cy="105" rx="18" ry="20" fill="#888"/>
+                        <!-- Eyes -->
+                        <circle cx="265" cy="68" r="3" fill="#333"/>
+                        <circle cx="275" cy="68" r="3" fill="#333"/>
+                        <text x="280" y="145" text-anchor="middle" font-size="12" fill="#333">Step 25</text>
+                        <text x="280" y="160" text-anchor="middle" font-size="11" fill="#666">Clear Subject</text>
+                    </g>
+                    
+                    <!-- Step 50: Detailed image -->
+                    <g>
+                        <rect x="350" y="50" width="80" height="80" fill="#c8d4e0" stroke="#999" stroke-width="1"/>
+                        <!-- Detailed head -->
+                        <circle cx="380" cy="72" r="13" fill="#d4a574"/>
+                        <!-- Hair -->
+                        <path d="M 367 72 Q 367 60 380 58 Q 393 60 393 72" fill="#8b6f47"/>
+                        <!-- Body -->
+                        <ellipse cx="380" cy="110" rx="20" ry="18" fill="#4a90e2"/>
+                        <!-- Face details -->
+                        <circle cx="376" cy="70" r="2" fill="#333"/>
+                        <circle cx="384" cy="70" r="2" fill="#333"/>
+                        <path d="M 380 75 L 380 80" stroke="#333" stroke-width="1"/>
+                        <path d="M 375 82 Q 380 84 385 82" stroke="#333" stroke-width="1" fill="none"/>
+                        <text x="390" y="145" text-anchor="middle" font-size="12" fill="#333">Step 50</text>
+                        <text x="390" y="160" text-anchor="middle" font-size="11" fill="#666">Final Image</text>
+                    </g>
+                    
+                    <!-- Arrow indicators -->
+                    <path d="M 105 90 L 125 90" stroke="#667eea" stroke-width="2" fill="none" marker-end="url(#arrowhead)"/>
+                    <path d="M 215 90 L 235 90" stroke="#667eea" stroke-width="2" fill="none" marker-end="url(#arrowhead)"/>
+                    <path d="M 325 90 L 345 90" stroke="#667eea" stroke-width="2" fill="none" marker-end="url(#arrowhead)"/>
+                    
+                    <!-- Bottom info -->
+                    <rect x="20" y="180" width="410" height="60" fill="#f5f5f5" stroke="#ddd" stroke-width="1" rx="4"/>
+                    <text x="30" y="200" font-size="12" font-weight="bold" fill="#333">Process Summary:</text>
+                    <text x="30" y="220" font-size="11" fill="#555">Each step uses the U-Net to predict and remove noise. The model refines the image based on:</text>
+                    <text x="30" y="235" font-size="11" fill="#555">• Current noise level (timestep) • Text embeddings from the prompt • Learned patterns from training</text>
+                </svg>
+
+                <div class="highlight">
+                    <strong>🔑 Key Insight:</strong> If the model was trained on aesthetically pleasing images 
+                    (like Stable Diffusion was, trained on LAION Aesthetics dataset), the generated images tend 
+                    to be aesthetically pleasing too. Different training datasets lead to different generation characteristics.
+                </div>
+            </section>
+
+            <!-- Latent Space -->
+            <section>
+                <h2>The Power of Latent Space</h2>
+                <p>
+                    One of Stable Diffusion's most important innovations is performing the diffusion process 
+                    in "latent space" rather than in full pixel space.
+                </p>
+
+                <h3>What is Latent Space?</h3>
+                <p>
+                    Latent space is a compressed representation of an image. An autoencoder compresses a 512×512 
+                    pixel image into a much smaller 4×64×64 latent representation. This compression:
+                </p>
+                <ul>
+                    <li>Reduces computational requirements dramatically</li>
+                    <li>Speeds up the diffusion process</li>
+                    <li>Requires less memory</li>
+                    <li>Still preserves all important visual information</li>
+                </ul>
+
+                <svg viewBox="0 0 1000 250" style="width: 100%; height: auto; margin: 20px 0; border: 1px solid #ddd; border-radius: 8px; background: white;">
+                    <defs>
+                        <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+                            <polygon points="0 0, 10 3, 0 6" fill="#667eea" />
+                        </marker>
+                    </defs>
+                    
+                    <!-- Title -->
+                    <text x="500" y="25" text-anchor="middle" font-size="16" font-weight="bold" fill="#333">Compression to Latent Space</text>
+                    
+                    <!-- Original Image -->
+                    <g>
+                        <text x="150" y="50" text-anchor="middle" font-size="13" font-weight="bold" fill="#333">Original Image</text>
+                        <text x="150" y="70" text-anchor="middle" font-size="11" fill="#666">512×512×3 pixels</text>
+                        
+                        <!-- Simplified image representation -->
+                        <rect x="80" y="90" width="140" height="140" fill="url(#imageGrad)" stroke="#999" stroke-width="2" rx="3"/>
+                        
+                        <!-- Add some detail to make it look like an image -->
+                        <circle cx="120" cy="125" r="20" fill="#87ceeb" opacity="0.8"/>
+                        <ellipse cx="150" cy="155" rx="35" ry="25" fill="#90ee90" opacity="0.7"/>
+                        <rect x="100" y="100" width="80" height="60" fill="none" stroke="#ffff99" stroke-width="2" opacity="0.5"/>
+                    </g>
+                    
+                    <!-- Encoder Arrow -->
+                    <text x="380" y="160" text-anchor="middle" font-size="12" font-weight="bold" fill="#667eea">Encoder</text>
+                    <line x1="220" y1="160" x2="340" y2="160" stroke="#667eea" stroke-width="3" marker-end="url(#arrowhead)"/>
+                    
+                    <!-- Latent Space -->
+                    <g>
+                        <text x="650" y="50" text-anchor="middle" font-size="13" font-weight="bold" fill="#333">Latent Space</text>
+                        <text x="650" y="70" text-anchor="middle" font-size="11" fill="#666">4×64×64 = 16,384 values</text>
+                        
+                        <!-- Grid representation -->
+                        <rect x="520" y="90" width="260" height="140" fill="#fff9e6" stroke="#999" stroke-width="2" rx="3"/>
+                        
+                        <!-- Draw a small grid to represent the latent space -->
+                        <g stroke="#ddd" stroke-width="1">
+                            <line x1="540" y1="90" x2="540" y2="230"/>
+                            <line x1="560" y1="90" x2="560" y2="230"/>
+                            <line x1="580" y1="90" x2="580" y2="230"/>
+                            <line x1="600" y1="90" x2="600" y2="230"/>
+                            <line x1="620" y1="90" x2="620" y2="230"/>
+                            <line x1="640" y1="90" x2="640" y2="230"/>
+                            <line x1="660" y1="90" x2="660" y2="230"/>
+                            <line x1="680" y1="90" x2="680" y2="230"/>
+                            <line x1="700" y1="90" x2="700" y2="230"/>
+                            <line x1="720" y1="90" x2="720" y2="230"/>
+                            <line x1="740" y1="90" x2="740" y2="230"/>
+                            <line x1="760" y1="90" x2="760" y2="230"/>
+                            <line x1="780" y1="90" x2="780" y2="230"/>
+                        </g>
+                        
+                        <!-- Color gradient to show information density -->
+                        <rect x="520" y="100" width="260" height="30" fill="url(#heatmap)"/>
+                        <text x="650" y="180" text-anchor="middle" font-size="11" fill="#666">Compressed information</text>
+                        <text x="650" y="200" text-anchor="middle" font-size="11" fill="#666">preserving all visual details</text>
+                    </g>
+                    
+                    <!-- Benefits box -->
+                    <rect x="20" y="260" width="960" height="50" fill="#e8f5e9" stroke="#4caf50" stroke-width="2" rx="4"/>
+                    <text x="500" y="280" text-anchor="middle" font-size="12" font-weight="bold" fill="#333">
+                        Benefits: 48,576× smaller than pixel space | Speeds up diffusion 4-16× | Enables consumer GPU use | Preserves semantic content
+                    </text>
+                    
+                    <!-- Define gradients -->
+                    <defs>
+                        <linearGradient id="imageGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#87ceeb;stop-opacity:0.8" />
+                            <stop offset="100%" style="stop-color:#90ee90;stop-opacity:0.7" />
+                        </linearGradient>
+                        <linearGradient id="heatmap" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" style="stop-color:#ff6b6b;stop-opacity:0.8" />
+                            <stop offset="50%" style="stop-color:#ffd93d;stop-opacity:0.8" />
+                            <stop offset="100%" style="stop-color:#6bcf7f;stop-opacity:0.8" />
+                        </linearGradient>
+                    </defs>
+                </svg>
+
+                <div class="key-takeaway">
+                    <strong>✅ Practical Benefit:</strong> By working in latent space instead of pixel space, 
+                    Stable Diffusion can generate images on consumer GPUs and CPUs, making it accessible to everyone.
+                </div>
+            </section>
+
+            <!-- Text Integration -->
+            <section>
+                <h2>How Text Controls Image Generation</h2>
+                <p>
+                    Without text integration, diffusion models can generate images but have no way to control 
+                    what they generate. Here's how Stable Diffusion incorporates text guidance:
+                </p>
+
+                <h3>Text Embedding Through CLIP</h3>
+                <p>
+                    CLIP (Contrastive Language-Image Pre-training) is trained on 400+ million images and their captions. 
+                    It learns to create similar numerical embeddings for images and their descriptions.
+                </p>
+
+                <svg viewBox="0 0 1000 320" style="width: 100%; height: auto; margin: 20px 0; border: 1px solid #ddd; border-radius: 8px; background: white;">
+                    <defs>
+                        <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+                            <polygon points="0 0, 10 3, 0 6" fill="#667eea" />
+                        </marker>
+                        <linearGradient id="similarGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" style="stop-color:#ff6b6b;stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:#4caf50;stop-opacity:1" />
+                        </linearGradient>
+                    </defs>
+                    
+                    <!-- Title -->
+                    <text x="500" y="25" text-anchor="middle" font-size="16" font-weight="bold" fill="#333">CLIP Training: Learning to Match Images and Text</text>
+                    
+                    <!-- Left side - Image -->
+                    <g>
+                        <text x="200" y="55" text-anchor="middle" font-size="12" font-weight="bold" fill="#333">Image</text>
+                        <rect x="120" y="70" width="160" height="120" fill="#e8f5e9" stroke="#4caf50" stroke-width="2" rx="3"/>
+                        <circle cx="180" cy="110" r="25" fill="#87ceeb" opacity="0.8"/>
+                        <ellipse cx="180" cy="155" rx="40" ry="20" fill="#90ee90" opacity="0.7"/>
+                    </g>
+                    
+                    <!-- Arrow to Image Encoder -->
+                    <line x1="200" y1="200" x2="200" y2="230" stroke="#667eea" stroke-width="2" marker-end="url(#arrowhead)"/>
+                    
+                    <!-- Image Encoder -->
+                    <rect x="130" y="230" width="140" height="50" fill="#fff3e0" stroke="#f57c00" stroke-width="2" rx="5"/>
+                    <text x="200" y="260" text-anchor="middle" font-size="12" font-weight="bold" fill="#333">Image Encoder</text>
+                    
+                    <!-- Arrow to Image Embedding -->
+                    <line x1="200" y1="280" x2="200" y2="310" stroke="#667eea" stroke-width="2" marker-end="url(#arrowhead)"/>
+                    
+                    <!-- Right side - Text -->
+                    <g>
+                        <text x="800" y="55" text-anchor="middle" font-size="12" font-weight="bold" fill="#333">Text Caption</text>
+                        <rect x="680" y="70" width="240" height="120" fill="#e3f2fd" stroke="#667eea" stroke-width="2" rx="3"/>
+                        <text x="700" y="95" font-size="11" fill="#333">"A dog sitting</text>
+                        <text x="700" y="112" font-size="11" fill="#333">in a park with</text>
+                        <text x="700" y="129" font-size="11" fill="#333">green grass and</text>
+                        <text x="700" y="146" font-size="11" fill="#333">blue sky"</text>
+                        <text x="700" y="163" font-size="11" fill="#333">...</text>
+                    </g>
+                    
+                    <!-- Arrow to Text Encoder -->
+                    <line x1="800" y1="200" x2="800" y2="230" stroke="#764ba2" stroke-width="2" marker-end="url(#arrowhead)"/>
+                    
+                    <!-- Text Encoder -->
+                    <rect x="730" y="230" width="140" height="50" fill="#f3e5f5" stroke="#764ba2" stroke-width="2" rx="5"/>
+                    <text x="800" y="260" text-anchor="middle" font-size="12" font-weight="bold" fill="#333">Text Encoder</text>
+                    
+                    <!-- Arrow to Text Embedding -->
+                    <line x1="800" y1="280" x2="800" y2="310" stroke="#764ba2" stroke-width="2" marker-end="url(#arrowhead)"/>
+                    
+                    <!-- Embeddings comparison -->
+                    <g>
+                        <!-- Left embedding -->
+                        <rect x="100" y="320" width="200" height="40" fill="#f0f0f0" stroke="#ddd" stroke-width="1" rx="3"/>
+                        <text x="200" y="335" text-anchor="middle" font-size="11" font-weight="bold" fill="#333">Image Embedding</text>
+                        <text x="200" y="352" text-anchor="middle" font-size="10" fill="#666">[0.45, 0.89, -0.23, 0.12, ...]</text>
+                    </g>
+                    
+                    <g>
+                        <!-- Right embedding -->
+                        <rect x="700" y="320" width="200" height="40" fill="#f0f0f0" stroke="#ddd" stroke-width="1" rx="3"/>
+                        <text x="800" y="335" text-anchor="middle" font-size="11" font-weight="bold" fill="#333">Text Embedding</text>
+                        <text x="800" y="352" text-anchor="middle" font-size="10" fill="#666">[0.44, 0.91, -0.25, 0.13, ...]</text>
+                    </g>
+                    
+                    <!-- Similarity arrow and label -->
+                    <line x1="305" y1="340" x2="695" y2="340" stroke="url(#similarGrad)" stroke-width="4" marker-end="url(#arrowhead)"/>
+                    <text x="500" y="365" text-anchor="middle" font-size="12" font-weight="bold" fill="#4caf50">High Similarity (Match!)</text>
+                    
+                    <!-- Process explanation at bottom -->
+                    <rect x="20" y="380" width="960" height="60" fill="#f9f9f9" stroke="#ddd" stroke-width="1" rx="4"/>
+                    <text x="30" y="400" font-size="11" font-weight="bold" fill="#333">Training Process:</text>
+                    <text x="30" y="420" font-size="11" fill="#555">Images and captions are encoded separately. During training, matching pairs get similar embeddings while</text>
+                    <text x="30" y="437" font-size="11" fill="#555">mismatched pairs get different embeddings. This teaches the model semantic relationships between vision and language.</text>
+                </svg>
+
+                <h3>Cross-Attention in U-Net</h3>
+                <p>
+                    The U-Net noise predictor is enhanced with attention layers that:
+                </p>
+                <ul>
+                    <li>Take text embeddings as input</li>
+                    <li>Apply cross-attention mechanisms</li>
+                    <li>Integrate text information into the latent processing</li>
+                    <li>Guide image generation toward the text prompt</li>
+                </ul>
+
+                <svg viewBox="0 0 1000 350" style="width: 100%; height: auto; margin: 20px 0; border: 1px solid #ddd; border-radius: 8px; background: white;">
+                    <defs>
+                        <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+                            <polygon points="0 0, 10 3, 0 6" fill="#667eea" />
+                        </marker>
+                        <marker id="arrowhead-purple" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+                            <polygon points="0 0, 10 3, 0 6" fill="#764ba2" />
+                        </marker>
+                    </defs>
+                    
+                    <!-- Title -->
+                    <text x="500" y="25" text-anchor="middle" font-size="16" font-weight="bold" fill="#333">U-Net Architecture with Text Conditioning</text>
+                    
+                    <!-- Input section -->
+                    <rect x="20" y="50" width="100" height="60" fill="#f3e5f5" stroke="#764ba2" stroke-width="2" rx="5"/>
+                    <text x="70" y="75" text-anchor="middle" font-size="12" font-weight="bold" fill="#333">Noisy</text>
+                    <text x="70" y="92" text-anchor="middle" font-size="12" font-weight="bold" fill="#333">Latents</text>
+                    
+                    <!-- Text input -->
+                    <rect x="20" y="150" width="100" height="60" fill="#e3f2fd" stroke="#667eea" stroke-width="2" rx="5"/>
+                    <text x="70" y="175" text-anchor="middle" font-size="12" font-weight="bold" fill="#333">Text</text>
+                    <text x="70" y="192" text-anchor="middle" font-size="12" font-weight="bold" fill="#333">Embeddings</text>
+                    
+                    <!-- Arrow down from latents -->
+                    <line x1="120" y1="80" x2="180" y2="80" stroke="#667eea" stroke-width="2" marker-end="url(#arrowhead)"/>
+                    
+                    <!-- Arrow from text -->
+                    <line x1="70" y1="150" x2="250" y2="110" stroke="#764ba2" stroke-width="2" marker-end="url(#arrowhead-purple)" stroke-dasharray="5,5"/>
+                    
+                    <!-- First ResNet Block -->
+                    <g>
+                        <rect x="180" y="60" width="90" height="50" fill="#fff3e0" stroke="#f57c00" stroke-width="2" rx="5"/>
+                        <text x="225" y="85" text-anchor="middle" font-size="11" font-weight="bold" fill="#333">ResNet</text>
+                        <text x="225" y="100" text-anchor="middle" font-size="11" font-weight="bold" fill="#333">Block 1</text>
+                    </g>
+                    
+                    <!-- Arrow -->
+                    <line x1="270" y1="85" x2="310" y2="85" stroke="#667eea" stroke-width="2" marker-end="url(#arrowhead)"/>
+                    
+                    <!-- Cross-Attention Layer -->
+                    <g>
+                        <rect x="310" y="50" width="100" height="80" fill="#e8f5e9" stroke="#4caf50" stroke-width="3" rx="5"/>
+                        <text x="360" y="75" text-anchor="middle" font-size="12" font-weight="bold" fill="#333">Cross</text>
+                        <text x="360" y="92" text-anchor="middle" font-size="12" font-weight="bold" fill="#333">Attention</text>
+                        <text x="360" y="110" text-anchor="middle" font-size="10" fill="#666">(Text ↔ Image)</text>
+                    </g>
+                    
+                    <!-- Arrow from attention -->
+                    <line x1="410" y1="90" x2="450" y2="90" stroke="#667eea" stroke-width="2" marker-end="url(#arrowhead)"/>
+                    
+                    <!-- Second ResNet Block -->
+                    <g>
+                        <rect x="450" y="65" width="90" height="50" fill="#fff3e0" stroke="#f57c00" stroke-width="2" rx="5"/>
+                        <text x="495" y="90" text-anchor="middle" font-size="11" font-weight="bold" fill="#333">ResNet</text>
+                        <text x="495" y="105" text-anchor="middle" font-size="11" font-weight="bold" fill="#333">Block 2</text>
+                    </g>
+                    
+                    <!-- Arrow -->
+                    <line x1="540" y1="90" x2="580" y2="90" stroke="#667eea" stroke-width="2" marker-end="url(#arrowhead)"/>
+                    
+                    <!-- Output -->
+                    <rect x="580" y="65" width="100" height="50" fill="#fce4ec" stroke="#c2185b" stroke-width="2" rx="5"/>
+                    <text x="630" y="85" text-anchor="middle" font-size="12" font-weight="bold" fill="#333">Refined</text>
+                    <text x="630" y="102" text-anchor="middle" font-size="12" font-weight="bold" fill="#333">Latents</text>
+                    
+                    <!-- Process explanation -->
+                    <rect x="20" y="240" width="660" height="100" fill="#f9f9f9" stroke="#ddd" stroke-width="1" rx="4"/>
+                    <text x="30" y="260" font-size="13" font-weight="bold" fill="#333">How Cross-Attention Works:</text>
+                    
+                    <text x="30" y="285" font-size="11" fill="#555">1. ResNet blocks process the noisy latent image data</text>
+                    <text x="30" y="305" font-size="11" fill="#555">2. Cross-Attention layer compares text embeddings with image features using attention mechanism</text>
+                    <text x="30" y="325" font-size="11" fill="#555">3. The attention weights determine which parts of the image should align with which parts of the text</text>
+                    
+                    <!-- Legend -->
+                    <g>
+                        <line x1="700" y1="60" x2="730" y2="60" stroke="#667eea" stroke-width="2" marker-end="url(#arrowhead)"/>
+                        <text x="745" y="65" font-size="11" fill="#333">Image flow</text>
+                        
+                        <line x1="700" y1="90" x2="730" y2="90" stroke="#764ba2" stroke-width="2" stroke-dasharray="5,5" marker-end="url(#arrowhead-purple)"/>
+                        <text x="745" y="95" font-size="11" fill="#333">Text conditioning</text>
+                        
+                        <rect x="700" y="115" width="15" height="15" fill="#4caf50" stroke="#2e7d32" stroke-width="1"/>
+                        <text x="745" y="128" font-size="11" fill="#333">Critical layer</text>
+                    </g>
+                </svg>
+
+                <div class="key-takeaway">
+                    <strong>✅ Important Note:</strong> The quality of the text encoder and language model is crucial. 
+                    Research shows that upgrading to larger language models has a bigger impact on image quality than 
+                    upgrading the image generation components!
+                </div>
+            </section>
+
+            <!-- Practical Parameters -->
+            <section>
+                <h2>Understanding Generation Parameters</h2>
+                <p>
+                    When using Stable Diffusion, various parameters control the output:
+                </p>
+
+                <div class="component-box">
+                    <h4>Steps (Sampling Steps)</h4>
+                    <p>
+                        The number of denoising iterations. More steps typically produce higher quality but take longer.
+                        Default is usually 50-100 steps.
+                    </p>
+                </div>
+
+                <div class="component-box">
+                    <h4>Guidance Scale</h4>
+                    <p>
+                        How strongly the model should follow your text prompt. Higher values make images more aligned 
+                        with the prompt but may reduce quality. Typical range: 7-15.
+                    </p>
+                </div>
+
+                <div class="component-box">
+                    <h4>Seed</h4>
+                    <p>
+                        Controls the initial random noise. Using the same seed with the same prompt produces identical results.
+                    </p>
+                </div>
+
+                <div class="component-box">
+                    <h4>Prompt Weight</h4>
+                    <p>
+                        In multi-prompt generation, controls how much each prompt influences the final image.
+                    </p>
+                </div>
+            </section>
+
+            <!-- Applications -->
+            <section>
+                <h2>Practical Applications</h2>
+                <ul>
+                    <li><strong>Creative Art:</strong> Generate unique artwork and illustrations</li>
+                    <li><strong>Design:</strong> Create concept art and design mockups</li>
+                    <li><strong>Photography:</strong> Enhance and modify existing photos</li>
+                    <li><strong>Content Creation:</strong> Generate images for blogs, social media, and marketing</li>
+                    <li><strong>Education:</strong> Visualize concepts and ideas</li>
+                    <li><strong>Research:</strong> Data augmentation and synthetic dataset generation</li>
+                </ul>
+            </section>
+
+            <!-- Resources -->
+            <section>
+                <h2>Recommended Resources</h2>
+                <div class="resources">
+                    <h3>Original Educational Content</h3>
+                    <ul>
+                        <li>
+                            <a href="https://jalammar.github.io/illustrated-stable-diffusion/" target="_blank">
+                            The Illustrated Stable Diffusion by Jay Alammar</a> 
+                            - The original comprehensive guide with visualizations
+                        </li>
+                    </ul>
+
+                    <h3>Practical Tools & Libraries</h3>
+                    <ul>
+                        <li>
+                            <a href="https://huggingface.co/blog/stable_diffusion" target="_blank">
+                            Stable Diffusion with 🧨 Diffusers</a>
+                        </li>
+                        <li>
+                            <a href="https://github.com/AUTOMATIC1111/stable-diffusion-webui" target="_blank">
+                            Stable Diffusion WebUI</a>
+                        </li>
+                        <li>
+                            <a href="https://beta.dreamstudio.ai/" target="_blank">
+                            Dream Studio</a> - Official Stable Diffusion interface
+                        </li>
+                    </ul>
+
+                    <h3>Theoretical Deep Dives</h3>
+                    <ul>
+                        <li>
+                            <a href="https://lilianweng.github.io/posts/2021-07-11-diffusion-models/" target="_blank">
+                            What are Diffusion Models? by Lilian Weng</a>
+                        </li>
+                        <li>
+                            <a href="https://arxiv.org/abs/2112.10752" target="_blank">
+                            High-Resolution Image Synthesis with Latent Diffusion Models (Original Paper)</a>
+                        </li>
+                    </ul>
+
+                    <h3>Video Tutorials</h3>
+                    <ul>
+                        <li>
+                            <a href="https://www.youtube.com/watch?v=J87hffSMB60" target="_blank">
+                            How does Stable Diffusion work? – Latent Diffusion Models EXPLAINED</a>
+                        </li>
+                        <li>
+                            <a href="https://www.youtube.com/watch?v=_7rMfsA24Ls" target="_blank">
+                            Fast.ai's Stable Diffusion Videos</a>
+                        </li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- Conclusion -->
+            <section>
+                <h2>Conclusion</h2>
+                <p>
+                    Stable Diffusion represents a major milestone in making AI image generation accessible to everyone. 
+                    By understanding its core components—text encoding, latent space diffusion, and autoencoder decoding—we 
+                    can better appreciate both its capabilities and limitations.
+                </p>
+                <p>
+                    The key innovations that make Stable Diffusion special are:
+                </p>
+                <ul>
+                    <li>Operating in compressed latent space for efficiency</li>
+                    <li>Using high-quality text encoders (CLIP) for semantic understanding</li>
+                    <li>Applying cross-attention mechanisms for text guidance</li>
+                    <li>Leveraging the diffusion process for stable, predictable generation</li>
+                </ul>
+
+                <div class="warning">
+                    <strong>⚠️ Important Consideration:</strong> When using Stable Diffusion or similar tools, 
+                    always be mindful of ethical concerns including bias in training data, copyright issues with 
+                    generated content, and responsible use of synthetic media.
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <p>
+                <strong>Original Work Attribution:</strong> Concepts, explanations, and framework based on 
+                <a href="https://jalammar.github.io/illustrated-stable-diffusion/" target="_blank">
+                "The Illustrated Stable Diffusion"</a> by Jay Alammar (2022)
+            </p>
+            <p style="margin-top: 10px;">
+                Licensed under <a href="http://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">
+                Creative Commons CC BY-NC-SA 4.0</a>
+            </p>
+            <p style="margin-top: 10px; font-size: 0.85em; color: #999;">
+                This educational guide was created for learning purposes. Please visit the original article 
+                for comprehensive visualizations and detailed explanations.
+            </p>
+        </footer>
+    </div>
+</body>
+</html>
