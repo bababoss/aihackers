@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LTX-Core Pipeline Architecture</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px 20px;
+            text-align: center;
+        }
+
+        .header-content {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 30px;
+            flex-wrap: wrap;
+        }
+
+        .logo {
+            font-size: 48px;
+            font-weight: bold;
+            background: linear-gradient(135deg, #FFD700, #FFA500);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        h1 {
+            font-size: 2.5em;
+            font-weight: 700;
+        }
+
+        .subtitle {
+            font-size: 1.1em;
+            opacity: 0.9;
+            margin-top: 10px;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .section-title {
+            font-size: 2em;
+            color: #333;
+            margin-bottom: 20px;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .overview {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            padding: 30px;
+            border-radius: 10px;
+            margin-bottom: 40px;
+            border-left: 5px solid #667eea;
+        }
+
+        .overview-text {
+            font-size: 1.1em;
+            color: #333;
+            line-height: 1.8;
+            margin-bottom: 15px;
+        }
+
+        .overview-highlight {
+            background: #FFD700;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+
+        .pipeline-section {
+            margin-bottom: 50px;
+        }
+
+        .diagram-container {
+            background: #f9f9f9;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 30px;
+            margin: 30px 0;
+            overflow-x: auto;
+        }
+
+        .mermaid {
+            display: flex;
+            justify-content: center;
+        }
+
+        .components {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+
+        .component-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .component-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.5);
+        }
+
+        .component-card h3 {
+            font-size: 1.3em;
+            margin-bottom: 10px;
+            color: #FFD700;
+        }
+
+        .component-card p {
+            font-size: 0.95em;
+            line-height: 1.6;
+            opacity: 0.95;
+        }
+
+        .flow-steps {
+            background: #f0f4ff;
+            padding: 30px;
+            border-radius: 10px;
+            margin: 30px 0;
+        }
+
+        .step {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        .step-number {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 20px;
+            flex-shrink: 0;
+            font-size: 1.2em;
+        }
+
+        .step-content {
+            flex: 1;
+        }
+
+        .step-content h4 {
+            color: #333;
+            margin-bottom: 8px;
+            font-size: 1.1em;
+        }
+
+        .step-content p {
+            color: #666;
+            line-height: 1.6;
+        }
+
+        .architecture-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin: 30px 0;
+        }
+
+        .arch-item {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            padding: 20px;
+            border-radius: 8px;
+            border: 2px solid #667eea;
+            transition: all 0.3s ease;
+        }
+
+        .arch-item:hover {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            transform: scale(1.05);
+        }
+
+        .arch-item h5 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+
+        .arch-item:hover h5 {
+            color: #FFD700;
+        }
+
+        .arch-item p {
+            font-size: 0.9em;
+            line-height: 1.5;
+        }
+
+        .highlight-box {
+            background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+            padding: 25px;
+            border-radius: 10px;
+            margin: 30px 0;
+            color: #333;
+            font-weight: 600;
+            border-left: 5px solid #FF6B6B;
+        }
+
+        .key-features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .feature {
+            background: white;
+            border: 2px solid #667eea;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .feature:hover {
+            background: #667eea;
+            color: white;
+            transform: translateY(-3px);
+        }
+
+        .feature-icon {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        footer {
+            background: #333;
+            color: white;
+            text-align: center;
+            padding: 20px;
+            font-size: 0.9em;
+        }
+
+        .tech-stack {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+        }
+
+        .tech-item {
+            background: white;
+            padding: 15px;
+            border-radius: 6px;
+            text-align: center;
+            font-weight: 600;
+            color: #667eea;
+            border: 2px solid #667eea;
+        }
+
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            h1 {
+                font-size: 1.8em;
+            }
+
+            .content {
+                padding: 20px;
+            }
+
+            .section-title {
+                font-size: 1.5em;
+            }
+
+            .components {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .note {
+            background: #e8f4f8;
+            border-left: 4px solid #00a8cc;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 20px 0;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-content">
+                <div class="logo">🤖 BABABOSS</div>
+                <div>
+                    <h1>LTX-Core Pipeline Architecture</h1>
+                    <p class="subtitle">Advanced Audio-Video Generation Architecture Visualization</p>
+                </div>
+            </div>
+        </header>
+
+        <div class="content">
+            <!-- Overview Section -->
+            <section class="pipeline-section">
+                <h2 class="section-title">📋 Overview</h2>
+                <div class="overview">
+                    <p class="overview-text">
+                        <span class="overview-highlight">LTX-2</span> is a groundbreaking asymmetric dual-stream diffusion transformer 
+                        that simultaneously generates synchronized video and audio content from text prompts. Unlike traditional 
+                        sequential pipelines (text→video→audio), LTX-2 jointly models audio-video dependencies, enabling 
+                        <span class="overview-highlight">true temporal synchronization</span> between modalities.
+                    </p>
+                    <p class="overview-text" style="margin-top: 15px;">
+                        The architecture features:
+                    </p>
+                    <div class="feature-list" style="margin-top: 15px; display: flex; flex-wrap: wrap; gap: 10px;">
+                        <span style="background: #667eea; color: white; padding: 8px 15px; border-radius: 20px;">14B Video Stream</span>
+                        <span style="background: #667eea; color: white; padding: 8px 15px; border-radius: 20px;">5B Audio Stream</span>
+                        <span style="background: #667eea; color: white; padding: 8px 15px; border-radius: 20px;">48 Transformer Blocks</span>
+                        <span style="background: #667eea; color: white; padding: 8px 15px; border-radius: 20px;">Bidirectional Cross-Attention</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Data Flow Diagram -->
+            <section class="pipeline-section">
+                <h2 class="section-title">🔄 Complete Generation Pipeline</h2>
+                <div class="diagram-container">
+                    <div class="mermaid">
+                        graph TD
+                            A["📝 TEXT INPUT"] -->|Gemma 3 Encoder| B["🎬 Video Context<br/>4096-dim"]
+                            A -->|Gemma 3 Encoder| C["🎵 Audio Context<br/>2048-dim"]
+                            
+                            B -->|Initialize| D["🔀 Latent Noise<br/>B,C,F,H,W"]
+                            C -->|Initialize| D
+                            
+                            D -->|Patchify| E["📦 Sequence Format<br/>B,seq_len,dim"]
+                            
+                            E -->|Sigma Schedule| F["⏱️ Noise Schedule<br/>Generated"]
+                            
+                            F -->|Iterative Loop| G["🔄 Denoising Step"]
+                            G -->|Transformer| H["🎯 Predict Noise"]
+                            H -->|Guidance<br/>CFG/STG| I["✨ Apply Guidance"]
+                            I -->|Diffusion Math| J["📈 Update Latents"]
+                            J -->|Loop| K{More Steps?}
+                            K -->|Yes| G
+                            K -->|No| L["⬅️ Unpatchify"]
+                            
+                            L -->|Spatial Format| M["🎬 Video VAE<br/>Decoder"]
+                            L -->|Spatial Format| N["🎵 Audio VAE<br/>Decoder"]
+                            
+                            M -->|Pixels| O["🎥 Video Output<br/>H×W×F"]
+                            N -->|Mel Spectrogram| P["🎚️ Vocoder"]
+                            P -->|24kHz Audio| Q["🔊 Audio Output"]
+                            
+                            style A fill:#FFD700,stroke:#FF6B6B,stroke-width:3px,color:#333
+                            style B fill:#667eea,stroke:#764ba2,stroke-width:2px,color:#fff
+                            style C fill:#667eea,stroke:#764ba2,stroke-width:2px,color:#fff
+                            style O fill:#FFD700,stroke:#FF6B6B,stroke-width:3px,color:#333
+                            style Q fill:#FFD700,stroke:#FF6B6B,stroke-width:3px,color:#333
+                    </div>
+                </div>
+            </section>
+
+            <!-- Transformer Architecture -->
+            <section class="pipeline-section">
+                <h2 class="section-title">🧠 Dual-Stream Transformer Architecture</h2>
+                <div class="diagram-container">
+                    <div class="mermaid">
+                        graph TB
+                            subgraph VIDEO["🎬 VIDEO STREAM (14B Parameters)"]
+                                V1["RMSNorm"]
+                                V2["Self-Attention<br/>3D RoPE x,y,t"]
+                                V3["Text Cross-Attention"]
+                                V4["A↔V Cross-Attention<br/>1D RoPE temporal"]
+                                V5["Feed-Forward Network"]
+                                V1 --> V2 --> V3
+                                V4 -.->|AdaLN| V2
+                                V3 --> V4 --> V5
+                            end
+                            
+                            subgraph AUDIO["🎵 AUDIO STREAM (5B Parameters)"]
+                                A1["RMSNorm"]
+                                A2["Self-Attention<br/>1D RoPE temporal"]
+                                A3["Text Cross-Attention"]
+                                A4["V↔A Cross-Attention<br/>1D RoPE temporal"]
+                                A5["Feed-Forward Network"]
+                                A1 --> A2 --> A3
+                                A4 -.->|AdaLN| A2
+                                A3 --> A4 --> A5
+                            end
+                            
+                            V4 <-->|Bidirectional| A4
+                            
+                            style VIDEO fill:#667eea,stroke:#764ba2,stroke-width:3px,color:#fff
+                            style AUDIO fill:#667eea,stroke:#764ba2,stroke-width:3px,color:#fff
+                            style V4 fill:#FFD700,stroke:#FF6B6B,stroke-width:2px,color:#333
+                            style A4 fill:#FFD700,stroke:#FF6B6B,stroke-width:2px,color:#333
+                    </div>
+                </div>
+                <div class="note">
+                    <strong>⚡ Key Innovation:</strong> Bidirectional audio-visual cross-attention with 1D temporal RoPE enables 
+                    sub-frame temporal alignment, ensuring lip-sync accuracy and natural foley generation without requiring 
+                    sequential T2V→V2A pipelines.
+                </div>
+            </section>
+
+            <!-- Step-by-Step Pipeline -->
+            <section class="pipeline-section">
+                <h2 class="section-title">🚀 Generation Steps Explained</h2>
+                <div class="flow-steps">
+                    <div class="step">
+                        <div class="step-number">1</div>
+                        <div class="step-content">
+                            <h4>📝 Text Encoding</h4>
+                            <p>User prompt is processed through Gemma 3 text encoder, generating separate embeddings for video (4096-dim) and audio (2048-dim) conditions. This modality-specific encoding enables better phonetic accuracy for speech.</p>
+                        </div>
+                    </div>
+
+                    <div class="step">
+                        <div class="step-number">2</div>
+                        <div class="step-content">
+                            <h4>🎲 Latent Initialization</h4>
+                            <p>Random Gaussian noise is initialized in spatial format [B, C, F, H, W] (batch, channels, frames, height, width). For typical generation: [1, 128, 33, 16, 16].</p>
+                        </div>
+                    </div>
+
+                    <div class="step">
+                        <div class="step-number">3</div>
+                        <div class="step-content">
+                            <h4>📦 Patchification</h4>
+                            <p>Spatial latents are flattened to sequence format [B, seq_len, dim] to enable efficient transformer processing. This allows parallel processing across time, height, and width dimensions.</p>
+                        </div>
+                    </div>
+
+                    <div class="step">
+                        <div class="step-number">4</div>
+                        <div class="step-content">
+                            <h4>⏱️ Sigma Schedule</h4>
+                            <p>Noise schedule is generated targeting the computed sequence length. This controls the denoising trajectory from pure noise to coherent output over ~50 denoising steps.</p>
+                        </div>
+                    </div>
+
+                    <div class="step">
+                        <div class="step-number">5</div>
+                        <div class="step-content">
+                            <h4>🔄 Denoising Loop</h4>
+                            <p>For each step: create modality inputs with per-token timesteps and RoPE positions → forward through transformer (both conditional and unconditional for CFG) → apply guidance strategies → update latents using Euler solver.</p>
+                        </div>
+                    </div>
+
+                    <div class="step">
+                        <div class="step-number">6</div>
+                        <div class="step-content">
+                            <h4>⬅️ Unpatchification</h4>
+                            <p>Sequence format is converted back to spatial format [B, C, F, H, W], restoring the structured representation needed for VAE decoding.</p>
+                        </div>
+                    </div>
+
+                    <div class="step">
+                        <div class="step-number">7</div>
+                        <div class="step-content">
+                            <h4>🎬 VAE Decoding & Output</h4>
+                            <p>Video latents → Video VAE Decoder → Pixels (optionally upscaled). Audio latents → Audio VAE Decoder → Mel spectrogram → HiFi-GAN Vocoder → 24kHz audio waveform.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Core Components -->
+            <section class="pipeline-section">
+                <h2 class="section-title">🔧 Core Components</h2>
+                <div class="components">
+                    <div class="component-card">
+                        <h3>🎬 Video VAE</h3>
+                        <p><strong>Encoder:</strong> Compresses [B,3,F,H,W] → [B,128,F',H/32,W/32]<br>
+                        <strong>Decoder:</strong> Expands latents back to pixels<br>
+                        <strong>Compression:</strong> Frame: 1/8, Spatial: 1/32</p>
+                    </div>
+
+                    <div class="component-card">
+                        <h3>🎵 Audio VAE</h3>
+                        <p><strong>Encoder:</strong> Mel spectrograms → [B,8,T/4,16] latents<br>
+                        <strong>Decoder:</strong> Latents → Mel spectrograms<br>
+                        <strong>Temporal:</strong> 4× downsampling, ~1/25s per token</p>
+                    </div>
+
+                    <div class="component-card">
+                        <h3>🔊 Vocoder</h3>
+                        <p><strong>Type:</strong> HiFi-GAN based<br>
+                        <strong>Features:</strong> Stereo synthesis, modified for audio quality<br>
+                        <strong>Output:</strong> 24 kHz waveform from 16 kHz mel spectrograms</p>
+                    </div>
+
+                    <div class="component-card">
+                        <h3>📝 Gemma Text Encoder</h3>
+                        <p><strong>Backbone:</strong> Gemma 3-12B decoder-only LLM<br>
+                        <strong>Features:</strong> Multi-layer extraction, learnable fusion, separate V/A contexts<br>
+                        <strong>Output:</strong> 4096-dim video + 2048-dim audio embeddings</p>
+                    </div>
+
+                    <div class="component-card">
+                        <h3>🎛️ Diffusion Components</h3>
+                        <p><strong>Schedulers:</strong> LTX2Scheduler, LinearQuadratic<br>
+                        <strong>Guiders:</strong> CFG, STG (Spatio-Temporal), APG<br>
+                        <strong>Noisers:</strong> Add noise per schedule</p>
+                    </div>
+
+                    <div class="component-card">
+                        <h3>⬆️ Spatial Upscaler</h3>
+                        <p><strong>Purpose:</strong> Upsample latent representations for higher-resolution generation<br>
+                        <strong>Usage:</strong> Two-stage pipelines for better quality output</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Architecture Highlights -->
+            <section class="pipeline-section">
+                <h2 class="section-title">✨ Key Architectural Features</h2>
+                <div class="highlight-box">
+                    <p style="margin-bottom: 15px;">🎯 <strong>Asymmetric Dual-Stream Design</strong></p>
+                    <p>14B video stream captures spatiotemporal dynamics with 3D RoPE (x, y, t), while 5B audio stream processes 1D temporal sequences. Both share 48 transformer blocks but differ in width, optimizing for modality-specific information density.</p>
+                </div>
+
+                <div class="highlight-box" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                    <p style="margin-bottom: 15px;">🔗 <strong>Bidirectional Cross-Modal Attention</strong></p>
+                    <p>1D temporal RoPE enables sub-frame alignment between video and audio without spatial cross-attention, ensuring natural synchronization for lip-sync and foley effects. AdaLN gates provide diffusion timestep awareness for smooth transitions.</p>
+                </div>
+
+                <div class="architecture-grid">
+                    <div class="arch-item">
+                        <h5>💾 Separate VAEs</h5>
+                        <p>Independent video/audio latent representations enable native V2A/A2V editing workflows and modality-specific compression optimization.</p>
+                    </div>
+                    <div class="arch-item">
+                        <h5>🌍 Multilingual Support</h5>
+                        <p>Gemma 3 backbone provides excellent multilingual understanding for phonetically accurate speech synthesis.</p>
+                    </div>
+                    <div class="arch-item">
+                        <h5>📊 Multi-Layer Features</h5>
+                        <p>Text encoder aggregates features from all Gemma layers, not just the final layer, for richer semantic understanding.</p>
+                    </div>
+                    <div class="arch-item">
+                        <h5>🎮 Fine-Grained Control</h5>
+                        <p>Perturbation system allows selective skipping of attention operations for advanced guidance techniques.</p>
+                    </div>
+                    <div class="arch-item">
+                        <h5>⚡ Quantization Support</h5>
+                        <p>FP8 quantization backends (TensorRT-LLM, FP8-Cast) reduce memory footprint while maintaining quality.</p>
+                    </div>
+                    <div class="arch-item">
+                        <h5>🔄 Cross-Modality AdaLN</h5>
+                        <p>Adaptive Layer Normalization gates conditioned on the other modality's hidden states for true synchronization.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Technical Stack -->
+            <section class="pipeline-section">
+                <h2 class="section-title">🛠️ Technical Stack</h2>
+                <div class="tech-stack">
+                    <div class="tech-item">PyTorch</div>
+                    <div class="tech-item">Transformers</div>
+                    <div class="tech-item">Diffusers</div>
+                    <div class="tech-item">Gemma 3</div>
+                    <div class="tech-item">RoPE</div>
+                    <div class="tech-item">VAE</div>
+                    <div class="tech-item">HiFi-GAN</div>
+                    <div class="tech-item">SafeTensors</div>
+                    <div class="tech-item">FP8 Quantization</div>
+                    <div class="tech-item">LoRA Fusion</div>
+                </div>
+            </section>
+
+            <!-- Key Metrics -->
+            <section class="pipeline-section">
+                <h2 class="section-title">📊 Model Specifications</h2>
+                <div class="key-features">
+                    <div class="feature">
+                        <div class="feature-icon">🎥</div>
+                        <div><strong>Video Stream</strong><br>14B Parameters<br>3D RoPE</div>
+                    </div>
+                    <div class="feature">
+                        <div class="feature-icon">🎵</div>
+                        <div><strong>Audio Stream</strong><br>5B Parameters<br>1D RoPE</div>
+                    </div>
+                    <div class="feature">
+                        <div class="feature-icon">🧩</div>
+                        <div><strong>Transformer Blocks</strong><br>48 Shared Blocks<br>Asymmetric Width</div>
+                    </div>
+                    <div class="feature">
+                        <div class="feature-icon">⏱️</div>
+                        <div><strong>Denoising Steps</strong><br>~50 Steps<br>Adaptive Schedule</div>
+                    </div>
+                    <div class="feature">
+                        <div class="feature-icon">🎬</div>
+                        <div><strong>Typical Output</strong><br>480p to 4K<br>Up to 60fps</div>
+                    </div>
+                    <div class="feature">
+                        <div class="feature-icon">🔊</div>
+                        <div><strong>Audio Output</strong><br>24 kHz Stereo<br>Synchronized</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Related Pipelines -->
+            <section class="pipeline-section">
+                <h2 class="section-title">🚀 Related Pipelines</h2>
+                <div class="components">
+                    <div class="component-card">
+                        <h3>📺 TI2VidTwoStages</h3>
+                        <p>Two-stage text-to-video generation with latent upscaling for enhanced quality and resolution. Recommended for production use.</p>
+                    </div>
+                    <div class="component-card">
+                        <h3>🎬 ICLoraPipeline</h3>
+                        <p>Video-to-video generation with IC-LoRA (Image-Conditioned LoRA) control for fine-grained style transfer and editing.</p>
+                    </div>
+                    <div class="component-card">
+                        <h3>⚡ DistilledPipeline</h3>
+                        <p>Fast inference with distilled model for real-time or near real-time generation with reduced memory requirements.</p>
+                    </div>
+                    <div class="component-card">
+                        <h3>🎯 KeyframeInterpolation</h3>
+                        <p>Generate smooth transitions between keyframes for interactive editing and precise temporal control.</p>
+                    </div>
+                </div>
+            </section>
+
+        </div>
+
+        <footer>
+            <p><strong>🤖 BABABOSS LTX-Core Documentation</strong> | Powered by Advanced Audio-Video Generation Technology</p>
+            <p style="margin-top: 10px; opacity: 0.8;">Created for comprehensive understanding of LTX-2 architecture and pipeline flow</p>
+        </footer>
+    </div>
+
+    <script>
+        mermaid.initialize({ startOnLoad: true, theme: 'default', securityLevel: 'loose' });
+        mermaid.contentLoaded();
+    </script>
+</body>
+</html>
