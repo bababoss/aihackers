@@ -1,0 +1,1137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LTX-2 Pipelines - Production-Ready Generation</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1500px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            padding: 40px 20px;
+            text-align: center;
+        }
+
+        .header-content {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 30px;
+            flex-wrap: wrap;
+        }
+
+        .logo {
+            font-size: 48px;
+            font-weight: bold;
+            background: linear-gradient(135deg, #FFD700, #FFA500);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        h1 {
+            font-size: 2.5em;
+            font-weight: 700;
+        }
+
+        .subtitle {
+            font-size: 1.1em;
+            opacity: 0.9;
+            margin-top: 10px;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .section-title {
+            font-size: 2em;
+            color: #1e3c72;
+            margin-bottom: 20px;
+            border-bottom: 4px solid #2a5298;
+            padding-bottom: 10px;
+        }
+
+        .overview {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            padding: 30px;
+            border-radius: 10px;
+            margin-bottom: 40px;
+            border-left: 5px solid #2a5298;
+        }
+
+        .overview-text {
+            font-size: 1.05em;
+            color: #333;
+            line-height: 1.8;
+            margin-bottom: 15px;
+        }
+
+        .highlight {
+            background: #FFD700;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+
+        .section {
+            margin-bottom: 50px;
+        }
+
+        .diagram-container {
+            background: #f9f9f9;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 30px;
+            margin: 30px 0;
+            overflow-x: auto;
+        }
+
+        .mermaid {
+            display: flex;
+            justify-content: center;
+        }
+
+        .pipeline-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+
+        .pipeline-card {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(30, 60, 114, 0.3);
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+
+        .pipeline-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 15px 35px rgba(30, 60, 114, 0.5);
+            border-color: #FFD700;
+        }
+
+        .pipeline-card h3 {
+            font-size: 1.4em;
+            margin-bottom: 10px;
+            color: #FFD700;
+        }
+
+        .pipeline-card .badge {
+            display: inline-block;
+            background: rgba(255, 215, 0, 0.2);
+            border: 1px solid #FFD700;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            margin-bottom: 15px;
+            color: #FFD700;
+        }
+
+        .pipeline-card p {
+            font-size: 0.95em;
+            line-height: 1.6;
+            opacity: 0.95;
+        }
+
+        .use-case {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid rgba(255, 215, 0, 0.3);
+            font-size: 0.9em;
+        }
+
+        .use-case strong {
+            color: #FFD700;
+        }
+
+        .guidance-section {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            padding: 30px;
+            border-radius: 10px;
+            margin: 30px 0;
+            border: 2px solid #2a5298;
+        }
+
+        .guidance-param {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 15px 0;
+            border-left: 4px solid #2a5298;
+            transition: all 0.3s ease;
+        }
+
+        .guidance-param:hover {
+            background: #f0f4ff;
+            transform: translateX(5px);
+        }
+
+        .guidance-param strong {
+            color: #1e3c72;
+            font-size: 1.1em;
+        }
+
+        .guidance-param code {
+            background: #e8f1f8;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-weight: 600;
+            color: #2a5298;
+        }
+
+        .flow-steps {
+            background: #f0f4ff;
+            padding: 30px;
+            border-radius: 10px;
+            margin: 30px 0;
+        }
+
+        .step {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            border-left: 4px solid #2a5298;
+        }
+
+        .step-number {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 20px;
+            flex-shrink: 0;
+            font-size: 1.2em;
+        }
+
+        .step-content {
+            flex: 1;
+        }
+
+        .step-content h4 {
+            color: #1e3c72;
+            margin-bottom: 8px;
+            font-size: 1.1em;
+        }
+
+        .step-content p {
+            color: #666;
+            line-height: 1.6;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 30px 0;
+        }
+
+        .feature-box {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .feature-box:hover {
+            transform: scale(1.08);
+            box-shadow: 0 10px 25px rgba(30, 60, 114, 0.4);
+        }
+
+        .feature-box .icon {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .feature-box strong {
+            display: block;
+            color: #FFD700;
+            margin-bottom: 5px;
+        }
+
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 30px 0;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(30, 60, 114, 0.2);
+        }
+
+        .comparison-table thead {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+        }
+
+        .comparison-table th {
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        .comparison-table td {
+            padding: 15px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .comparison-table tbody tr:hover {
+            background: #f9f9f9;
+        }
+
+        .comparison-table .check {
+            color: #00a86b;
+            font-weight: bold;
+            font-size: 1.3em;
+        }
+
+        .comparison-table .cross {
+            color: #ff4444;
+            font-weight: bold;
+            font-size: 1.3em;
+        }
+
+        .decision-tree {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            padding: 30px;
+            border-radius: 10px;
+            margin: 30px 0;
+            border: 2px solid #2a5298;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            line-height: 1.8;
+            color: #1e3c72;
+        }
+
+        .highlight-box {
+            background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+            padding: 30px;
+            border-radius: 10px;
+            margin: 30px 0;
+            color: #333;
+            font-weight: 600;
+            border: 2px solid #FF6B6B;
+        }
+
+        .highlight-box p {
+            margin: 10px 0;
+        }
+
+        .optimization-tips {
+            background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+            padding: 25px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border-left: 5px solid #4caf50;
+        }
+
+        .optimization-tips strong {
+            color: #1b5e20;
+        }
+
+        .code-block {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 20px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            line-height: 1.5;
+        }
+
+        .code-block code {
+            color: #d4d4d4;
+        }
+
+        footer {
+            background: #1e3c72;
+            color: white;
+            text-align: center;
+            padding: 20px;
+            font-size: 0.9em;
+        }
+
+        .note {
+            background: #e3f2fd;
+            border-left: 4px solid #1e3c72;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 20px 0;
+            color: #1e3c72;
+        }
+
+        .warning {
+            background: #fff3e0;
+            border-left: 4px solid #ff6f00;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 20px 0;
+            color: #333;
+        }
+
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            h1 {
+                font-size: 1.8em;
+            }
+
+            .content {
+                padding: 20px;
+            }
+
+            .section-title {
+                font-size: 1.5em;
+            }
+
+            .pipeline-cards {
+                grid-template-columns: 1fr;
+            }
+
+            .decision-tree {
+                font-size: 0.85em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-content">
+                <div class="logo">🤖 BABABOSS</div>
+                <div>
+                    <h1>LTX-2 Pipelines</h1>
+                    <p class="subtitle">Production-Ready Audio-Video Generation Pipelines</p>
+                </div>
+            </div>
+        </header>
+
+        <div class="content">
+            <!-- Overview Section -->
+            <section class="section">
+                <h2 class="section-title">📋 Overview</h2>
+                <div class="overview">
+                    <p class="overview-text">
+                        <span class="highlight">LTX-2 Pipelines</span> provides production-ready implementations that abstract away the complexity of diffusion, model loading, and memory management. Each pipeline is optimized for specific use cases with different trade-offs between speed, quality, and memory usage.
+                    </p>
+                    <p class="overview-text" style="margin-top: 15px;">
+                        Built using building blocks from ltx-core, these pipelines handle the complete inference flow including:
+                    </p>
+                    <div class="features-grid">
+                        <div class="feature-box">
+                            <div class="icon">📦</div>
+                            <strong>Model Loading</strong>
+                            <span>Automatic checkpoint handling</span>
+                        </div>
+                        <div class="feature-box">
+                            <div class="icon">🔄</div>
+                            <strong>Encoding</strong>
+                            <span>Text & image processing</span>
+                        </div>
+                        <div class="feature-box">
+                            <div class="icon">🎬</div>
+                            <strong>Decoding</strong>
+                            <span>VAE & vocoder output</span>
+                        </div>
+                        <div class="feature-box">
+                            <div class="icon">💾</div>
+                            <strong>File I/O</strong>
+                            <span>Video & audio export</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Pipeline Selection Guide -->
+            <section class="section">
+                <h2 class="section-title">🎯 Pipeline Selection Guide</h2>
+                <p style="margin-bottom: 20px; font-size: 1.05em; color: #666;">Choose the right pipeline for your use case:</p>
+                <div class="decision-tree">Do you need to condition on existing images/videos?
+├─ YES → Do you have reference videos for video-to-video?
+│  ├─ YES → Use ICLoraPipeline (Video-to-Video)
+│  └─ NO → Do you have multiple keyframe images to interpolate?
+│     ├─ YES → Use KeyframeInterpolationPipeline (Animation)
+│     └─ NO → Use TI2VidTwoStagesPipeline (Image Conditioning)
+│
+└─ NO → Text-to-video only
+   ├─ Do you need best quality?
+   │  └─ YES → Use TI2VidTwoStagesPipeline (Recommended)
+   │
+   └─ Do you need fastest inference?
+      └─ YES → Use DistilledPipeline (8 steps only)
+                </div>
+            </section>
+
+            <!-- Available Pipelines -->
+            <section class="section">
+                <h2 class="section-title">📦 Available Pipelines</h2>
+                <div class="pipeline-cards">
+                    <div class="pipeline-card">
+                        <h3>🎬 TI2VidTwoStagesPipeline</h3>
+                        <div class="badge">RECOMMENDED</div>
+                        <p><strong>Best for:</strong> High-quality text/image-to-video generation with upsampling.</p>
+                        <p style="margin-top: 10px;">Two-stage generation with Stage 1 generating low-resolution video with multimodal guidance, and Stage 2 upsampling to 2x resolution with distilled LoRA refinement. Supports image conditioning.</p>
+                        <div class="use-case">
+                            <strong>Use when:</strong> Production-quality output needed, higher resolution required, image-to-video, or quality over speed.
+                        </div>
+                    </div>
+
+                    <div class="pipeline-card">
+                        <h3>📺 TI2VidOneStagePipeline</h3>
+                        <div class="badge">EDUCATIONAL</div>
+                        <p><strong>Best for:</strong> Learning and quick prototyping only.</p>
+                        <p style="margin-top: 10px;">Single-stage generation without upsampling. Faster inference but lower resolution output (typically 512x768). Multimodal guidance and image conditioning supported.</p>
+                        <div class="use-case">
+                            <strong>Use when:</strong> Learning pipeline architecture, quick testing, or when high resolution is not critical.
+                        </div>
+                    </div>
+
+                    <div class="pipeline-card">
+                        <h3>⚡ DistilledPipeline</h3>
+                        <div class="badge">FASTEST</div>
+                        <p><strong>Best for:</strong> Fastest inference with good quality using distilled model.</p>
+                        <p style="margin-top: 10px;">Two-stage with only 8 predefined sigmas (8 steps in stage 1, 4 in stage 2). No guidance required. Fastest among all pipelines. Supports image conditioning.</p>
+                        <div class="use-case">
+                            <strong>Use when:</strong> Fastest inference priority, batch processing many videos, or only distilled checkpoint available.
+                        </div>
+                    </div>
+
+                    <div class="pipeline-card">
+                        <h3>🎥 ICLoraPipeline</h3>
+                        <div class="badge">VIDEO-CONTROL</div>
+                        <p><strong>Best for:</strong> Video-to-video and image-to-video transformations.</p>
+                        <p style="margin-top: 10px;">Two-stage with IC-LoRA support. Conditions on reference videos (video-to-video) or images at specific frames. CFG guidance in stage 1, upsampling in stage 2. Requires IC-LoRA trained model.</p>
+                        <div class="use-case">
+                            <strong>Use when:</strong> Video-to-video transformations, strong control needed, or reference videos available for guidance.
+                        </div>
+                    </div>
+
+                    <div class="pipeline-card">
+                        <h3>🎯 KeyframeInterpolationPipeline</h3>
+                        <div class="badge">ANIMATION</div>
+                        <p><strong>Best for:</strong> Generating videos by interpolating between keyframes.</p>
+                        <p style="margin-top: 10px;">Two-stage with keyframe interpolation using additive conditioning for smoother transitions. Multimodal guidance in stage 1, upsampling in stage 2.</p>
+                        <div class="use-case">
+                            <strong>Use when:</strong> Keyframe images need smooth transitions, animation/motion interpolation, or interactive frame-by-frame control needed.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Features Comparison -->
+                <h3 style="color: #1e3c72; margin-top: 40px; margin-bottom: 20px; font-size: 1.5em;">⚖️ Features Comparison</h3>
+                <table class="comparison-table">
+                    <thead>
+                        <tr>
+                            <th>Pipeline</th>
+                            <th>Stages</th>
+                            <th>Multimodal Guidance</th>
+                            <th>Distilled LoRA</th>
+                            <th>Conditioning Type</th>
+                            <th>Best For</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>TI2VidTwoStagesPipeline</strong></td>
+                            <td>2</td>
+                            <td><span class="check">✓</span></td>
+                            <td><span class="check">✓</span></td>
+                            <td>Image</td>
+                            <td>Production quality (recommended)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>TI2VidOneStagePipeline</strong></td>
+                            <td>1</td>
+                            <td><span class="check">✓</span></td>
+                            <td><span class="cross">✗</span></td>
+                            <td>Image</td>
+                            <td>Educational, prototyping</td>
+                        </tr>
+                        <tr>
+                            <td><strong>DistilledPipeline</strong></td>
+                            <td>2</td>
+                            <td><span class="cross">✗</span></td>
+                            <td><span class="check">✓</span></td>
+                            <td>Image</td>
+                            <td>Fastest inference (8 sigmas)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>ICLoraPipeline</strong></td>
+                            <td>2</td>
+                            <td><span class="check">✓</span></td>
+                            <td><span class="check">✓</span></td>
+                            <td>Image + Video</td>
+                            <td>Video-to-video transformations</td>
+                        </tr>
+                        <tr>
+                            <td><strong>KeyframeInterpolationPipeline</strong></td>
+                            <td>2</td>
+                            <td><span class="check">✓</span></td>
+                            <td><span class="check">✓</span></td>
+                            <td>Keyframes</td>
+                            <td>Animation, interpolation</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <!-- Pipeline Flow Diagrams -->
+            <section class="section">
+                <h2 class="section-title">🔄 Pipeline Flow Diagrams</h2>
+
+                <!-- Two-Stage Flow -->
+                <h3 style="color: #1e3c72; margin-top: 30px; margin-bottom: 20px; font-size: 1.3em;">Two-Stage Pipeline Flow</h3>
+                <div class="diagram-container">
+                    <div class="mermaid">
+                        graph TD
+                            A["📝 TEXT PROMPT"] -->|Gemma Encoder| B["🎬 Video Context<br/>4096-dim"]
+                            A -->|Gemma Encoder| C["🎵 Audio Context<br/>2048-dim"]
+                            
+                            D["🖼️ OPTIONAL IMAGE"] -->|Encode| E["Image Latent"]
+                            
+                            B -->|Initialize Stage 1| F["Stage 1: LOW-RES<br/>Generation"]
+                            C -->|Initialize Stage 1| F
+                            E -->|Condition| F
+                            
+                            F -->|Denoise| G["🎨 Low-Res Video<br/>+Audio"]
+                            
+                            G -->|Encode| H["Stage 2: UPSAMPLING<br/>with Distilled LoRA"]
+                            
+                            H -->|Denoise| I["🎥 High-Res Video<br/>+Audio"]
+                            
+                            I -->|Video VAE<br/>Decode| J["🎬 Video Output"]
+                            I -->|Audio VAE +<br/>Vocoder| K["🔊 Audio Output"]
+                            
+                            style A fill:#FFD700,stroke:#FF6B6B,stroke-width:3px,color:#333
+                            style J fill:#FFD700,stroke:#FF6B6B,stroke-width:3px,color:#333
+                            style K fill:#FFD700,stroke:#FF6B6B,stroke-width:3px,color:#333
+                            style F fill:#1e3c72,stroke:#2a5298,stroke-width:2px,color:#fff
+                            style H fill:#1e3c72,stroke:#2a5298,stroke-width:2px,color:#fff
+                    </div>
+                </div>
+
+                <!-- Denoising Loop Detail -->
+                <h3 style="color: #1e3c72; margin-top: 30px; margin-bottom: 20px; font-size: 1.3em;">Denoising Loop (Each Stage)</h3>
+                <div class="diagram-container">
+                    <div class="mermaid">
+                        graph TB
+                            A["🔀 Initial Noise Latent<br/>Video + Audio"] --> B["🔢 Iterate Through Sigma Schedule"]
+                            B --> C["📍 Get Current Sigma"]
+                            C --> D["➕ Add Timestep Info<br/>& RoPE Positions"]
+                            D --> E["🧠 Transformer Forward Pass<br/>Conditional"]
+                            D --> F["🧠 Transformer Forward Pass<br/>Unconditional CFG"]
+                            E --> G["🎛️ Multimodal Guidance<br/>CFG + STG + Modality CFG"]
+                            F --> G
+                            G --> H["✨ Guided Prediction"]
+                            H --> I["📈 Update Latent<br/>Euler Solver"]
+                            I --> J{More<br/>Steps?}
+                            J -->|Yes| C
+                            J -->|No| K["✅ Denoised Latent<br/>Video + Audio"]
+                            style A fill:#1e3c72,stroke:#2a5298,stroke-width:2px,color:#fff
+                            style K fill:#1e3c72,stroke:#2a5298,stroke-width:2px,color:#fff
+                            style G fill:#FFD700,stroke:#FF6B6B,stroke-width:2px,color:#333
+                    </div>
+                </div>
+
+                <!-- Conditioning Methods -->
+                <h3 style="color: #1e3c72; margin-top: 30px; margin-bottom: 20px; font-size: 1.3em;">🎨 Conditioning Methods</h3>
+                <div class="diagram-container">
+                    <div class="mermaid">
+                        graph LR
+                            subgraph IMAGE["IMAGE CONDITIONING"]
+                                A["Image Input"] -->|Encode| B["Image Latent"]
+                                B -->|Replace| C["Replace at Frame N"]
+                                C -->|Strong Control| D["Strong guidance at<br/>specific frame"]
+                            end
+                            
+                            subgraph VIDEO["VIDEO CONDITIONING"]
+                                E["Reference Video"] -->|Extract| F["Video Keyframes"]
+                                F -->|IC-LoRA| G["Condition Generation"]
+                                G -->|Style Transfer| H["Guided Transform"]
+                            end
+                            
+                            subgraph KEYFRAME["KEYFRAME INTERPOLATION"]
+                                I["Keyframe 1"] -->|Additive| J["Guiding Signal"]
+                                K["Keyframe 2"] -->|Additive| J
+                                J -->|Smooth| L["Interpolated Frames"]
+                            end
+                            
+                            style IMAGE fill:#e8f5e9,stroke:#4caf50
+                            style VIDEO fill:#e3f2fd,stroke:#2196f3
+                            style KEYFRAME fill:#fff3e0,stroke:#ff9800
+                    </div>
+                </div>
+            </section>
+
+            <!-- How It Works -->
+            <section class="section">
+                <h2 class="section-title">🚀 How It Works - Complete Generation Pipeline</h2>
+                <div class="flow-steps">
+                    <div class="step">
+                        <div class="step-number">1</div>
+                        <div class="step-content">
+                            <h4>📝 Text Encoding with Gemma</h4>
+                            <p>User prompt is processed through Gemma 3 text encoder, generating separate context embeddings for video (4096-dim) and audio (2048-dim). This enables modality-specific semantic understanding for better phonetic accuracy.</p>
+                        </div>
+                    </div>
+
+                    <div class="step">
+                        <div class="step-number">2</div>
+                        <div class="step-content">
+                            <h4>🖼️ Optional Image/Video Processing</h4>
+                            <p>If conditioning on images or videos, they are encoded through VAEs to latent space. For image conditioning, latents are prepared for replacement or additive guidance. For video inputs, keyframes are extracted for IC-LoRA guidance.</p>
+                        </div>
+                    </div>
+
+                    <div class="step">
+                        <div class="step-number">3</div>
+                        <div class="step-content">
+                            <h4>🎲 Initialize Noise (Stage 1)</h4>
+                            <p>Random Gaussian noise is initialized for both video and audio in spatial format. Typical: [B, 128, 33, 16, 16] for video, [B, 8, 132, 16] for audio - representing low-resolution latents ready for denoising.</p>
+                        </div>
+                    </div>
+
+                    <div class="step">
+                        <div class="step-number">4</div>
+                        <div class="step-content">
+                            <h4>⏱️ Generate Sigma Schedule</h4>
+                            <p>Noise schedule is computed targeting the token count. For two-stage pipelines, Stage 1 typically uses 40 steps, Stage 2 uses 20 steps. Distilled pipelines use fixed 8+4 steps with predefined sigmas.</p>
+                        </div>
+                    </div>
+
+                    <div class="step">
+                        <div class="step-number">5</div>
+                        <div class="step-content">
+                            <h4>🔄 Denoising Loop with Multimodal Guidance</h4>
+                            <p>For each denoising step: (a) Add per-token timesteps and RoPE positions, (b) Forward through transformer both conditionally and unconditionally, (c) Apply multimodal guidance (CFG + STG + modality CFG), (d) Update latents using Euler solver.</p>
+                        </div>
+                    </div>
+
+                    <div class="step">
+                        <div class="step-number">6</div>
+                        <div class="step-content">
+                            <h4>⬆️ Stage 2: Upsampling with Distilled LoRA (if two-stage)</h4>
+                            <p>Denoised low-res latents from Stage 1 are fed into Stage 2. Distilled LoRA weights enhance quality while reducing computation. Another 20-step denoising loop produces high-resolution latents (2x upscaling).</p>
+                        </div>
+                    </div>
+
+                    <div class="step">
+                        <div class="step-number">7</div>
+                        <div class="step-content">
+                            <h4>🎬 VAE Decoding to Pixel/Audio Space</h4>
+                            <p>Final latents are decoded: Video latents → Video VAE Decoder → Pixels. Audio latents → Audio VAE Decoder → Mel spectrogram → HiFi-GAN Vocoder → 24kHz audio waveform. Both outputs are synchronized.</p>
+                        </div>
+                    </div>
+
+                    <div class="step">
+                        <div class="step-number">8</div>
+                        <div class="step-content">
+                            <h4>💾 Export Video and Audio</h4>
+                            <p>High-quality video frames and synchronized audio are combined and exported to MP4 file with specified frame rate (typically 25 fps for video, 24 kHz for audio). Both streams are perfectly temporally aligned.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Guidance System -->
+            <section class="section">
+                <h2 class="section-title">🎛️ Multimodal Guidance System</h2>
+                <div class="overview">
+                    <p class="overview-text">
+                        LTX-2 pipelines use <span class="highlight">multimodal guidance</span> to steer the diffusion process for both video and audio modalities. Each modality has independent guiders with separate parameters, enabling fine-grained control.
+                    </p>
+                </div>
+
+                <!-- Guidance Types -->
+                <h3 style="color: #1e3c72; margin-top: 30px; margin-bottom: 20px; font-size: 1.3em;">Three Types of Guidance</h3>
+                <div class="diagram-container">
+                    <div class="mermaid">
+                        graph LR
+                            A["Conditional<br/>Prediction"] -->|CFG| B["Classifier-Free<br/>Guidance"]
+                            C["Unconditional<br/>Prediction"] -->|CFG| B
+                            
+                            D["Perturbed<br/>Latent"] -->|STG| E["Spatio-Temporal<br/>Guidance"]
+                            F["Guidance<br/>Signal"] -->|STG| E
+                            
+                            G["Video<br/>Modality"] -->|Modality| H["Modality CFG<br/>for Sync"]
+                            I["Audio<br/>Modality"] -->|Modality| H
+                            
+                            B --> J["🎯 Combined<br/>Guided Prediction"]
+                            E --> J
+                            H --> J
+                            
+                            style B fill:#1e3c72,stroke:#2a5298,stroke-width:2px,color:#fff
+                            style E fill:#1e3c72,stroke:#2a5298,stroke-width:2px,color:#fff
+                            style H fill:#1e3c72,stroke:#2a5298,stroke-width:2px,color:#fff
+                            style J fill:#FFD700,stroke:#FF6B6B,stroke-width:3px,color:#333
+                    </div>
+                </div>
+
+                <!-- Guidance Parameters -->
+                <h3 style="color: #1e3c72; margin-top: 30px; margin-bottom: 20px; font-size: 1.3em;">📊 Guidance Parameters Explained</h3>
+                <div class="guidance-section">
+                    <div class="guidance-param">
+                        <strong>cfg_scale</strong> <code>float, default: 3.0-7.0</code>
+                        <p>Classifier-Free Guidance strength. Higher values make output adhere more to text prompt. Typical range: 2.0-5.0 for video, 5.0-7.0 for audio. Set to <code>1.0</code> to disable CFG.</p>
+                    </div>
+
+                    <div class="guidance-param">
+                        <strong>stg_scale</strong> <code>float, default: 1.0</code>
+                        <p>Spatio-Temporal Guidance strength. Improves temporal coherence by adding perturbation-based guidance. Typical values: 0.5-1.5. Set to <code>0.0</code> to disable STG.</p>
+                    </div>
+
+                    <div class="guidance-param">
+                        <strong>stg_blocks</strong> <code>list, default: [29]</code>
+                        <p>Which transformer blocks to perturb for STG (0-47, where 47 is final block). Example: <code>[29]</code> targets final video+audio block. Set to <code>[]</code> to disable STG.</p>
+                    </div>
+
+                    <div class="guidance-param">
+                        <strong>rescale_scale</strong> <code>float, default: 0.7</code>
+                        <p>Rescale factor for guided prediction variance matching. Prevents over-saturation when guidance is too strong. Typical: 0.5-0.7. Set to <code>0.0</code> to disable.</p>
+                    </div>
+
+                    <div class="guidance-param">
+                        <strong>modality_scale</strong> <code>float, default: 3.0</code>
+                        <p>Modality CFG for audio-visual sync. Steers away from unsynced A/V results. For joint A/V generation: 3.0+. For video-only: set to <code>1.0</code>.</p>
+                    </div>
+
+                    <div class="guidance-param">
+                        <strong>skip_step</strong> <code>int, default: 0</code>
+                        <p>Skip guidance every N steps. Can speed up inference with minimal quality loss. Example: <code>2</code> applies guidance every other step. Set to <code>0</code> to disable (never skip).</p>
+                    </div>
+                </div>
+
+                <!-- Example Configuration -->
+                <h3 style="color: #1e3c72; margin-top: 30px; margin-bottom: 20px; font-size: 1.3em;">⚙️ Example Guidance Configuration</h3>
+                <div class="code-block">
+<code>from ltx_core.components.guiders import MultiModalGuiderParams
+
+# Video guider: moderate CFG, STG enabled, modality isolation
+video_guider_params = MultiModalGuiderParams(
+    cfg_scale=3.0,          # Moderate text adherence
+    stg_scale=1.0,          # Temporal coherence enabled
+    rescale_scale=0.7,      # Prevent over-saturation
+    modality_scale=3.0,     # Audio-visual sync
+    stg_blocks=[29],        # Target final block
+)
+
+# Audio guider: higher CFG for stronger pronunciation adherence
+audio_guider_params = MultiModalGuiderParams(
+    cfg_scale=7.0,          # Strong text adherence for speech
+    stg_scale=1.0,          # Temporal coherence
+    rescale_scale=0.7,
+    modality_scale=3.0,     # Audio-visual sync
+    stg_blocks=[29],
+)
+
+# Usage in pipeline
+pipeline(
+    prompt="A person speaking clearly",
+    video_guider_params=video_guider_params,
+    audio_guider_params=audio_guider_params,
+)</code>
+                </div>
+
+                <div class="highlight-box">
+                    <p>💡 <strong>Pro Tips:</strong></p>
+                    <p>• Start with default values from constants.py and adjust based on results</p>
+                    <p>• Higher cfg_scale = stronger prompt adherence but potentially less natural motion</p>
+                    <p>• Higher stg_scale = better temporal coherence but slower inference (extra forward passes)</p>
+                    <p>• For A/V generation, always set modality_scale > 1.0 (e.g., 3.0) for better lip-sync</p>
+                    <p>• For video-only generation, set modality_scale = 1.0 to disable sync guidance</p>
+                </div>
+            </section>
+
+            <!-- Pipeline-Specific Steps -->
+            <section class="section">
+                <h2 class="section-title">📋 Pipeline-Specific Steps</h2>
+                
+                <h3 style="color: #1e3c72; margin-top: 30px; margin-bottom: 20px; font-size: 1.3em;">TI2VidTwoStagesPipeline Flow</h3>
+                <div class="flow-steps">
+                    <div class="step">
+                        <div class="step-number">1</div>
+                        <div class="step-content">
+                            <h4>Load Model & Components</h4>
+                            <p>Initialize LTX transformer, video VAE, audio VAE, text encoder (Gemma), vocoder, and spatial upsampler from checkpoint files.</p>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">2</div>
+                        <div class="step-content">
+                            <h4>Stage 1: Generate Low-Res with Multimodal Guidance</h4>
+                            <p>Run ~40 denoising steps on low-resolution latents with full CFG, STG, and modality guidance enabled.</p>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">3</div>
+                        <div class="step-content">
+                            <h4>Stage 2: Spatial Upsampling + Distilled LoRA Refinement</h4>
+                            <p>Upsample Stage 1 output, apply distilled LoRA weights, run ~20 denoising steps for high-resolution output.</p>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">4</div>
+                        <div class="step-content">
+                            <h4>Decode & Export</h4>
+                            <p>Decode high-res latents through VAE and vocoder. Export synchronized MP4 with video at specified height/width and audio at 24 kHz.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <h3 style="color: #1e3c72; margin-top: 30px; margin-bottom: 20px; font-size: 1.3em;">ICLoraPipeline (Video-to-Video) Flow</h3>
+                <div class="flow-steps">
+                    <div class="step">
+                        <div class="step-number">1</div>
+                        <div class="step-content">
+                            <h4>Encode Reference Video</h4>
+                            <p>Extract keyframes from reference video at specified intervals. Encode each frame through video VAE to latent space.</p>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">2</div>
+                        <div class="step-content">
+                            <h4>Stage 1: IC-LoRA Conditioned Generation</h4>
+                            <p>Initialize noise, apply IC-LoRA conditioning, run denoising with reference video guidance and multimodal CFG.</p>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">3</div>
+                        <div class="step-content">
+                            <h4>Stage 2: Upsampling</h4>
+                            <p>Upsample Stage 1 output with distilled LoRA refinement for higher resolution video-to-video transformation.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <h3 style="color: #1e3c72; margin-top: 30px; margin-bottom: 20px; font-size: 1.3em;">KeyframeInterpolationPipeline Flow</h3>
+                <div class="flow-steps">
+                    <div class="step">
+                        <div class="step-number">1</div>
+                        <div class="step-content">
+                            <h4>Encode Keyframes</h4>
+                            <p>Encode each keyframe image through video VAE to latent space, storing as additive guiding signals.</p>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">2</div>
+                        <div class="step-content">
+                            <h4>Stage 1: Generate Interpolation</h4>
+                            <p>Initialize noise, apply additive guiding signals from keyframes, run denoising for smooth interpolated frames.</p>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">3</div>
+                        <div class="step-content">
+                            <h4>Stage 2: Upsampling</h4>
+                            <p>Upsample interpolated latents with distilled LoRA for final high-resolution animation.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Optimization Tips -->
+            <section class="section">
+                <h2 class="section-title">⚡ Optimization Tips</h2>
+
+                <div class="optimization-tips">
+                    <strong>🔻 Reduce Memory Footprint with FP8:</strong>
+                    <p>Enable FP8 quantization for transformer with: <code>--enable-fp8</code> flag + environment variable <code>PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True</code></p>
+                </div>
+
+                <div class="optimization-tips">
+                    <strong>⚡ Speed Up Denoising:</strong>
+                    <p>Use gradient estimation denoising loop for fewer steps (~20-30 vs 40) while maintaining quality. Available in ltx_pipelines.utils.helpers.</p>
+                </div>
+
+                <div class="optimization-tips">
+                    <strong>⏭️ Skip Guidance Steps:</strong>
+                    <p>Set <code>skip_step=2</code> in guider params to apply guidance every other step, reducing inference time with minimal quality loss.</p>
+                </div>
+
+                <div class="optimization-tips">
+                    <strong>💾 Memory Cleanup Between Stages:</strong>
+                    <p>Pipelines automatically clean GPU memory between stages. Can be disabled if sufficient VRAM available for faster runtime.</p>
+                </div>
+
+                <div class="optimization-tips">
+                    <strong>🎬 Choose Right Pipeline:</strong>
+                    <p>Use DistilledPipeline for fastest inference (8 steps), TI2VidTwoStagesPipeline for best quality, or TI2VidOneStagePipeline for prototyping.</p>
+                </div>
+
+                <h3 style="color: #1e3c72; margin-top: 30px; margin-bottom: 20px; font-size: 1.3em;">Recommended Settings for Different Use Cases</h3>
+                <table class="comparison-table">
+                    <thead>
+                        <tr>
+                            <th>Use Case</th>
+                            <th>Pipeline</th>
+                            <th>Steps</th>
+                            <th>CFG Scale</th>
+                            <th>STG Enabled</th>
+                            <th>Typical Time</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Production Quality</strong></td>
+                            <td>TI2VidTwoStagesPipeline</td>
+                            <td>40+20</td>
+                            <td>3.0-5.0</td>
+                            <td>Yes</td>
+                            <td>30-60s (RTX 4090)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Fast Turnaround</strong></td>
+                            <td>DistilledPipeline</td>
+                            <td>8+4</td>
+                            <td>N/A</td>
+                            <td>No</td>
+                            <td>8-15s (RTX 4090)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Video Editing</strong></td>
+                            <td>ICLoraPipeline</td>
+                            <td>40+20</td>
+                            <td>3.0-5.0</td>
+                            <td>Yes</td>
+                            <td>30-60s (RTX 4090)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Animation</strong></td>
+                            <td>KeyframeInterpolationPipeline</td>
+                            <td>40+20</td>
+                            <td>3.0-5.0</td>
+                            <td>Yes</td>
+                            <td>30-60s (RTX 4090)</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <!-- CLI Usage -->
+            <section class="section">
+                <h2 class="section-title">🖥️ Command-Line Usage</h2>
+                <p style="margin-bottom: 20px; font-size: 1.05em;">All pipelines can be run directly from command line:</p>
+                <div class="code-block">
+<code># Run two-stage text-to-video pipeline
+python -m ltx_pipelines.ti2vid_two_stages \
+    --checkpoint-path /path/to/checkpoint.safetensors \
+    --distilled-lora /path/to/distilled_lora.safetensors 0.8 \
+    --spatial-upsampler-path /path/to/upsampler.safetensors \
+    --gemma-root /path/to/gemma \
+    --prompt "A beautiful sunset over the ocean" \
+    --output-path output.mp4 \
+    --height 512 \
+    --width 768 \
+    --num-frames 121 \
+    --num-inference-steps 40
+
+# View all options for any pipeline
+python -m ltx_pipelines.ti2vid_two_stages --help</code>
+                </div>
+
+                <p style="margin-top: 20px; font-size: 1.05em;"><strong>Available Pipeline Modules:</strong></p>
+                <div style="display: grid; gap: 10px; margin-top: 15px;">
+                    <div style="background: #f0f4ff; padding: 15px; border-radius: 8px; border-left: 4px solid #1e3c72;">
+                        <code>ltx_pipelines.ti2vid_two_stages</code> - Two-stage text/image-to-video (recommended)
+                    </div>
+                    <div style="background: #f0f4ff; padding: 15px; border-radius: 8px; border-left: 4px solid #1e3c72;">
+                        <code>ltx_pipelines.ti2vid_one_stage</code> - Single-stage text/image-to-video
+                    </div>
+                    <div style="background: #f0f4ff; padding: 15px; border-radius: 8px; border-left: 4px solid #1e3c72;">
+                        <code>ltx_pipelines.distilled</code> - Fast text/image-to-video using distilled model
+                    </div>
+                    <div style="background: #f0f4ff; padding: 15px; border-radius: 8px; border-left: 4px solid #1e3c72;">
+                        <code>ltx_pipelines.ic_lora</code> - Video-to-video with IC-LoRA
+                    </div>
+                    <div style="background: #f0f4ff; padding: 15px; border-radius: 8px; border-left: 4px solid #1e3c72;">
+                        <code>ltx_pipelines.keyframe_interpolation</code> - Keyframe interpolation
+                    </div>
+                </div>
+            </section>
+
+            <!-- Key Takeaways -->
+            <section class="section">
+                <h2 class="section-title">✅ Key Takeaways</h2>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-top: 20px;">
+                    <div style="background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); color: white; padding: 20px; border-radius: 10px;">
+                        <h4 style="color: #FFD700; margin-bottom: 10px;">🎯 Choice Matters</h4>
+                        <p>Select pipeline based on quality vs speed trade-off and conditioning type needed.</p>
+                    </div>
+                    <div style="background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); color: white; padding: 20px; border-radius: 10px;">
+                        <h4 style="color: #FFD700; margin-bottom: 10px;">🎛️ Fine-Tune Guidance</h4>
+                        <p>Adjust guidance parameters for optimal results - higher CFG for adherence, STG for coherence.</p>
+                    </div>
+                    <div style="background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); color: white; padding: 20px; border-radius: 10px;">
+                        <h4 style="color: #FFD700; margin-bottom: 10px;">⚡ Optimize Resources</h4>
+                        <p>Use FP8, gradient estimation, and skip steps to reduce memory and inference time.</p>
+                    </div>
+                    <div style="background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); color: white; padding: 20px; border-radius: 10px;">
+                        <h4 style="color: #FFD700; margin-bottom: 10px;">🎬 Audio-Visual Sync</h4>
+                        <p>Always set modality_scale > 1.0 for joint A/V generation to ensure lip-sync quality.</p>
+                    </div>
+                </div>
+            </section>
+
+        </div>
+
+        <footer>
+            <p><strong>🤖 BABABOSS LTX-Pipelines Documentation</strong> | Production-Ready Audio-Video Generation</p>
+            <p style="margin-top: 10px; opacity: 0.8;">Building blocks for creating high-quality synchronized video and audio content</p>
+        </footer>
+    </div>
+
+    <script>
+        mermaid.initialize({ startOnLoad: true, theme: 'default', securityLevel: 'loose' });
+        mermaid.contentLoaded();
+    </script>
+</body>
+</html>
