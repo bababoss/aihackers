@@ -9,5 +9,6 @@ Explore our comprehensive guides for AI video generation and advanced techniques
 - 🧠 **[Diffusion Models Guide](https://bababoss.github.io/aihackers/docs/diffusion.html)** - Deep dive into diffusion model technology
 - 🔧 **[LTX-Core Pipeline Architecture](https://bababoss.github.io/aihackers/docs/ltxcore.html)** - Advanced audio-video generation architecture visualization and pipeline flow
 - 🚀 **[LTX-2 Pipelines Guide](https://bababoss.github.io/aihackers/docs/ltxpipelines.html)** - Production-ready pipelines with guidance systems, flow diagrams, and optimization techniques
+- 📈 **[BLR Growth Hackers Meetup](https://bababoss.github.io/aihackers/docs/bgh.html)** - Community for entrepreneurs & business growth leaders - Marketing, Sales, and Entrepreneurship Growth
 
 ---

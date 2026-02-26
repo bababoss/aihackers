@@ -1,0 +1,999 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BLR Growth Hackers - Meetup Community</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+        }
+
+        /* Navigation */
+        nav {
+            background: linear-gradient(135deg, #1a73e8 0%, #0d47a1 100%);
+            padding: 1rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        nav .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        nav .logo {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        nav .logo i {
+            color: #ffc107;
+            font-size: 1.5em;
+        }
+
+        nav ul {
+            display: flex;
+            list-style: none;
+            gap: 2rem;
+        }
+
+        nav a {
+            color: white;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        nav a:hover {
+            color: #ffc107;
+            transform: translateY(-2px);
+        }
+
+        .join-btn {
+            background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
+            color: #333 !important;
+            padding: 0.8rem 1.5rem !important;
+            border-radius: 50px;
+            font-weight: bold !important;
+            transition: all 0.3s ease;
+        }
+
+        .join-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 8px 20px rgba(255, 193, 7, 0.4);
+        }
+
+        /* Hero Section */
+        .hero {
+            background: linear-gradient(135deg, rgba(26, 115, 232, 0.8) 0%, rgba(13, 71, 161, 0.8) 100%),
+                        url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 600"><defs><linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:%23667eea;stop-opacity:1" /><stop offset="100%" style="stop-color:%23764ba2;stop-opacity:1" /></linearGradient><pattern id="dots" x="0" y="0" width="50" height="50" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="3" fill="rgba(255,255,255,0.1)"/></pattern></defs><rect width="1200" height="600" fill="url(%23grad)"/><rect width="1200" height="600" fill="url(%23dots)"/><path d="M100,300 Q400,200 700,300 T1200,300" stroke="rgba(255,255,255,0.1)" stroke-width="2" fill="none"/><path d="M0,400 Q300,350 600,400 T1200,400" stroke="rgba(255,255,255,0.1)" stroke-width="2" fill="none"/><circle cx="150" cy="150" r="80" fill="rgba(255,255,255,0.05)"/><circle cx="1000" cy="450" r="120" fill="rgba(255,255,255,0.05)"/></svg>');
+            background-size: cover;
+            background-position: center;
+            color: white;
+            padding: 120px 20px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '📈';
+            position: absolute;
+            top: 20px;
+            right: 30px;
+            font-size: 100px;
+            opacity: 0.1;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        .hero::after {
+            content: '🚀';
+            position: absolute;
+            bottom: 20px;
+            left: 30px;
+            font-size: 100px;
+            opacity: 0.1;
+            animation: float 6s ease-in-out infinite 1s;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-30px); }
+        }
+
+        .hero-content {
+            max-width: 900px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero h1 {
+            font-size: 3.5em;
+            font-weight: 800;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+            animation: slideDown 0.8s ease-out;
+        }
+
+        .hero .subtitle {
+            font-size: 1.5em;
+            margin-bottom: 30px;
+            opacity: 0.95;
+            animation: slideUp 0.8s ease-out 0.2s both;
+        }
+
+        .hero-buttons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+            animation: slideUp 0.8s ease-out 0.4s both;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
+            color: #333;
+            padding: 15px 40px;
+            border: none;
+            border-radius: 50px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 20px rgba(255, 193, 7, 0.3);
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 30px rgba(255, 193, 7, 0.5);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: white;
+            padding: 15px 40px;
+            border: 2px solid white;
+            border-radius: 50px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-secondary:hover {
+            background: white;
+            color: #1a73e8;
+            transform: translateY(-5px);
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Container */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* Sections */
+        section {
+            padding: 80px 20px;
+        }
+
+        .section-title {
+            font-size: 2.5em;
+            font-weight: 800;
+            text-align: center;
+            margin-bottom: 50px;
+            color: #1a73e8;
+            position: relative;
+            padding-bottom: 20px;
+        }
+
+        .section-title::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100px;
+            height: 4px;
+            background: linear-gradient(90deg, #1a73e8, #ffc107);
+            border-radius: 2px;
+        }
+
+        /* About Section */
+        #about {
+            background: #f8f9ff;
+        }
+
+        .about-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 50px;
+            align-items: center;
+        }
+
+        .about-text h2 {
+            font-size: 2em;
+            color: #1a73e8;
+            margin-bottom: 20px;
+        }
+
+        .about-text p {
+            font-size: 1.1em;
+            line-height: 1.8;
+            color: #555;
+            margin-bottom: 15px;
+        }
+
+        .about-image {
+            position: relative;
+            height: 400px;
+            background: linear-gradient(135deg, #1a73e8, #ffc107);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 150px;
+            color: rgba(255, 255, 255, 0.2);
+            box-shadow: 0 20px 40px rgba(26, 115, 232, 0.2);
+            overflow: hidden;
+        }
+
+        /* Vision Mission Values */
+        .vmv-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 40px;
+            margin-top: 50px;
+        }
+
+        .vmv-card {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            text-align: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            border-top: 5px solid #1a73e8;
+        }
+
+        .vmv-card:nth-child(2) {
+            border-top-color: #ffc107;
+        }
+
+        .vmv-card:nth-child(3) {
+            border-top-color: #ff5722;
+        }
+
+        .vmv-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
+        }
+
+        .vmv-card .icon {
+            font-size: 3.5em;
+            margin-bottom: 20px;
+        }
+
+        .vmv-card h3 {
+            font-size: 1.8em;
+            color: #1a73e8;
+            margin-bottom: 15px;
+        }
+
+        .vmv-card p {
+            font-size: 1.05em;
+            color: #666;
+            line-height: 1.8;
+        }
+
+        /* Values Grid */
+        .values-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 30px;
+            margin-top: 50px;
+        }
+
+        .value-item {
+            background: linear-gradient(135deg, #1a73e8 0%, #0d47a1 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 12px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .value-item:hover {
+            transform: scale(1.05);
+            box-shadow: 0 15px 40px rgba(26, 115, 232, 0.3);
+        }
+
+        .value-item .icon {
+            font-size: 2.5em;
+            margin-bottom: 15px;
+        }
+
+        .value-item h4 {
+            font-size: 1.3em;
+            margin-bottom: 10px;
+        }
+
+        /* Topics Section */
+        #topics {
+            background: white;
+        }
+
+        .topics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
+            margin-top: 50px;
+        }
+
+        .topic-card {
+            background: white;
+            border: 2px solid #e0e0e0;
+            padding: 30px;
+            border-radius: 15px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .topic-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 193, 7, 0.2), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .topic-card:hover::before {
+            left: 100%;
+        }
+
+        .topic-card:hover {
+            border-color: #ffc107;
+            box-shadow: 0 15px 40px rgba(26, 115, 232, 0.2);
+            transform: translateY(-8px);
+        }
+
+        .topic-card .icon {
+            font-size: 2.5em;
+            margin-bottom: 15px;
+            color: #1a73e8;
+        }
+
+        .topic-card h4 {
+            font-size: 1.3em;
+            color: #1a73e8;
+            margin-bottom: 15px;
+        }
+
+        .topic-card p {
+            color: #666;
+            font-size: 0.95em;
+            line-height: 1.7;
+        }
+
+        /* Meetups Section */
+        #meetups {
+            background: linear-gradient(135deg, #f8f9ff 0%, #e8f0ff 100%);
+        }
+
+        .meetup-timeline {
+            position: relative;
+            padding: 40px 0;
+        }
+
+        .meetup-timeline::before {
+            content: '';
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 3px;
+            height: 100%;
+            background: linear-gradient(180deg, #1a73e8, #ffc107);
+        }
+
+        .meetup-item {
+            margin-bottom: 50px;
+            position: relative;
+        }
+
+        .meetup-item:nth-child(odd) .meetup-content {
+            margin-left: 0;
+            margin-right: auto;
+            text-align: right;
+            width: 48%;
+        }
+
+        .meetup-item:nth-child(even) .meetup-content {
+            margin-left: auto;
+            margin-right: 0;
+            text-align: left;
+            width: 48%;
+        }
+
+        .meetup-dot {
+            position: absolute;
+            left: 50%;
+            top: 0;
+            transform: translateX(-50%);
+            width: 20px;
+            height: 20px;
+            background: white;
+            border: 4px solid #1a73e8;
+            border-radius: 50%;
+            z-index: 2;
+        }
+
+        .meetup-content {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .meetup-content:hover {
+            transform: scale(1.02);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        .meetup-content h4 {
+            color: #1a73e8;
+            font-size: 1.3em;
+            margin-bottom: 10px;
+        }
+
+        .meetup-date {
+            color: #ffc107;
+            font-weight: bold;
+            font-size: 0.95em;
+            margin-bottom: 10px;
+        }
+
+        /* CTA Section */
+        .cta {
+            background: linear-gradient(135deg, #1a73e8 0%, #0d47a1 100%);
+            color: white;
+            text-align: center;
+            padding: 100px 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cta::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -10%;
+            width: 400px;
+            height: 400px;
+            background: rgba(255, 193, 7, 0.1);
+            border-radius: 50%;
+        }
+
+        .cta::after {
+            content: '';
+            position: absolute;
+            bottom: -30%;
+            left: -5%;
+            width: 300px;
+            height: 300px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+        }
+
+        .cta-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .cta h2 {
+            font-size: 2.5em;
+            margin-bottom: 20px;
+            font-weight: 800;
+        }
+
+        .cta p {
+            font-size: 1.2em;
+            margin-bottom: 30px;
+            opacity: 0.95;
+        }
+
+        .whatsapp-btn {
+            display: inline-block;
+            background: #25D366;
+            color: white;
+            padding: 18px 50px;
+            border-radius: 50px;
+            font-size: 1.2em;
+            font-weight: bold;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 20px rgba(37, 211, 102, 0.3);
+        }
+
+        .whatsapp-btn:hover {
+            background: #20ba5a;
+            transform: scale(1.08);
+            box-shadow: 0 12px 30px rgba(37, 211, 102, 0.5);
+        }
+
+        .whatsapp-btn i {
+            margin-right: 10px;
+        }
+
+        /* Stats Section */
+        .stats {
+            background: white;
+            padding: 80px 20px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 40px;
+            margin-top: 50px;
+        }
+
+        .stat-card {
+            text-align: center;
+            padding: 30px;
+            background: linear-gradient(135deg, #1a73e8 0%, #0d47a1 100%);
+            color: white;
+            border-radius: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: scale(1.08);
+        }
+
+        .stat-number {
+            font-size: 3em;
+            font-weight: 800;
+            color: #ffc107;
+            margin-bottom: 10px;
+        }
+
+        .stat-label {
+            font-size: 1.1em;
+            opacity: 0.95;
+        }
+
+        /* Footer */
+        footer {
+            background: #1a1a1a;
+            color: white;
+            padding: 40px 20px;
+            text-align: center;
+        }
+
+        footer p {
+            opacity: 0.8;
+            margin-bottom: 10px;
+        }
+
+        .social-links {
+            margin-top: 20px;
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+        }
+
+        .social-links a {
+            color: white;
+            font-size: 1.5em;
+            transition: all 0.3s ease;
+        }
+
+        .social-links a:hover {
+            color: #ffc107;
+            transform: translateY(-5px);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2.5em;
+            }
+
+            .hero .subtitle {
+                font-size: 1.2em;
+            }
+
+            .about-content {
+                grid-template-columns: 1fr;
+            }
+
+            nav ul {
+                gap: 1rem;
+                font-size: 0.9em;
+            }
+
+            .meetup-timeline::before {
+                left: 20px;
+            }
+
+            .meetup-item:nth-child(odd) .meetup-content,
+            .meetup-item:nth-child(even) .meetup-content {
+                margin-left: 60px;
+                margin-right: 0;
+                width: 100%;
+                text-align: left;
+            }
+
+            .meetup-dot {
+                left: 20px;
+            }
+
+            .cta h2 {
+                font-size: 1.8em;
+            }
+
+            section {
+                padding: 50px 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav>
+        <div class="container">
+            <div class="logo">
+                <i class="fas fa-rocket"></i>
+                BLR Growth Hackers
+            </div>
+            <ul>
+                <li><a href="#about">About</a></li>
+                <li><a href="#vision">Vision & Mission</a></li>
+                <li><a href="#values">Values</a></li>
+                <li><a href="#topics">Topics</a></li>
+                <li><a href="#meetups">Meetups</a></li>
+                <li><a href="#join" class="join-btn">Join Now</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <h1>BLR Growth Hackers</h1>
+            <p class="subtitle">🚀 Accelerating Entrepreneurial Growth & Business Success</p>
+            <div class="hero-buttons">
+                <a href="#join" class="btn-primary">
+                    <i class="fas fa-whatsapp"></i> Join Our Community
+                </a>
+                <a href="#topics" class="btn-secondary">Explore Topics</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section id="about">
+        <div class="container">
+            <h2 class="section-title">About Us</h2>
+            <div class="about-content">
+                <div class="about-text">
+                    <h2>Who We Are</h2>
+                    <p>BLR Growth Hackers is a vibrant and passionate community of entrepreneurs, business professionals, and growth enthusiasts in Bangalore. We're dedicated to sharing knowledge, strategies, and experiences that drive sustainable business growth.</p>
+                    <p>Our meetup group brings together innovators, marketers, sales leaders, product managers, and business owners to collaborate, learn, and grow together through meaningful discussions and actionable insights.</p>
+                    <p>Whether you're a startup founder, a business growth leader, or an aspiring entrepreneur, our community provides the platform, knowledge, and network you need to accelerate your business growth journey.</p>
+                </div>
+                <div class="about-image">
+                    📈
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Vision & Mission Section -->
+    <section id="vision">
+        <div class="container">
+            <h2 class="section-title">Vision & Mission</h2>
+            <div class="vmv-grid">
+                <div class="vmv-card">
+                    <div class="icon"><i class="fas fa-eye"></i></div>
+                    <h3>Our Vision</h3>
+                    <p>To build a thriving ecosystem where entrepreneurs and business professionals can unlock unlimited growth potential through collective wisdom, innovative strategies, and powerful networks.</p>
+                </div>
+                <div class="vmv-card">
+                    <div class="icon"><i class="fas fa-target"></i></div>
+                    <h3>Our Mission</h3>
+                    <p>To empower growth leaders with cutting-edge strategies, proven methodologies, and industry insights to drive marketing growth, sales excellence, product innovation, and sustainable entrepreneurial success.</p>
+                </div>
+                <div class="vmv-card">
+                    <div class="icon"><i class="fas fa-heart"></i></div>
+                    <h3>Our Promise</h3>
+                    <p>We commit to fostering an inclusive, collaborative community where every member can learn, share, and grow. We celebrate wins and learn from challenges together.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Values Section -->
+    <section id="values">
+        <div class="container">
+            <h2 class="section-title">Our Core Values</h2>
+            <div class="values-grid">
+                <div class="value-item">
+                    <div class="icon"><i class="fas fa-lightbulb"></i></div>
+                    <h4>Innovation</h4>
+                    <p>We embrace creative thinking and cutting-edge growth strategies</p>
+                </div>
+                <div class="value-item">
+                    <div class="icon"><i class="fas fa-users"></i></div>
+                    <h4>Collaboration</h4>
+                    <p>We believe in the power of collective wisdom and shared experiences</p>
+                </div>
+                <div class="value-item">
+                    <div class="icon"><i class="fas fa-graduation-cap"></i></div>
+                    <h4>Learning</h4>
+                    <p>We're committed to continuous learning and skill development</p>
+                </div>
+                <div class="value-item">
+                    <div class="icon"><i class="fas fa-chart-line"></i></div>
+                    <h4>Growth</h4>
+                    <p>We focus on sustainable, measurable, and scalable growth for all</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Topics Section -->
+    <section id="topics">
+        <div class="container">
+            <h2 class="section-title">Our Discussion Topics</h2>
+            <div class="topics-grid">
+                <div class="topic-card">
+                    <div class="icon"><i class="fas fa-bullhorn"></i></div>
+                    <h4>Marketing Growth</h4>
+                    <p>Strategies, campaigns, and tactics to achieve exponential marketing growth and brand visibility</p>
+                </div>
+                <div class="topic-card">
+                    <div class="icon"><i class="fas fa-building"></i></div>
+                    <h4>Business Growth</h4>
+                    <p>Scaling operations, business model innovation, and strategic expansion techniques</p>
+                </div>
+                <div class="topic-card">
+                    <div class="icon"><i class="fas fa-handshake"></i></div>
+                    <h4>Sales Growth</h4>
+                    <p>Sales strategies, pipeline management, and techniques to boost revenue consistently</p>
+                </div>
+                <div class="topic-card">
+                    <div class="icon"><i class="fas fa-cube"></i></div>
+                    <h4>Product to Sales</h4>
+                    <p>Converting products into market success and driving product-led growth initiatives</p>
+                </div>
+                <div class="topic-card">
+                    <div class="icon"><i class="fas fa-rocket"></i></div>
+                    <h4>Entrepreneurship</h4>
+                    <p>Startup insights, entrepreneurial mindset, and journey from idea to scale</p>
+                </div>
+                <div class="topic-card">
+                    <div class="icon"><i class="fas fa-magnet"></i></div>
+                    <h4>Leads & Strategy</h4>
+                    <p>Lead generation, B2B/B2C strategies, and data-driven growth decision making</p>
+                </div>
+                <div class="topic-card">
+                    <div class="icon"><i class="fas fa-network-wired"></i></div>
+                    <h4>Network Effect</h4>
+                    <p>Building communities, partnerships, and leveraging network effects for growth</p>
+                </div>
+                <div class="topic-card">
+                    <div class="icon"><i class="fas fa-trophy"></i></div>
+                    <h4>Success Stories</h4>
+                    <p>Learn from founders, leaders, and entrepreneurs who've achieved remarkable growth</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Stats Section -->
+    <section class="stats">
+        <div class="container">
+            <h2 class="section-title">Our Community Growth</h2>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number">500+</div>
+                    <div class="stat-label">Active Members</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">50+</div>
+                    <div class="stat-label">Monthly Meetups</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">100+</div>
+                    <div class="stat-label">Expert Speakers</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">$10M+</div>
+                    <div class="stat-label">Combined GMV Generated</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Meetups Section -->
+    <section id="meetups">
+        <div class="container">
+            <h2 class="section-title">Upcoming Meetups</h2>
+            <div class="meetup-timeline">
+                <div class="meetup-item">
+                    <div class="meetup-dot"></div>
+                    <div class="meetup-content">
+                        <h4>🎯 Sales Funnel Optimization Workshop</h4>
+                        <div class="meetup-date">📅 Every Sunday - 5:00 PM</div>
+                        <p>Deep dive into creating high-converting sales funnels with real-world case studies and actionable frameworks</p>
+                    </div>
+                </div>
+                <div class="meetup-item">
+                    <div class="meetup-dot"></div>
+                    <div class="meetup-content">
+                        <h4>📊 Marketing Analytics & Growth Metrics</h4>
+                        <div class="meetup-date">📅 Every Sunday - 5:00 PM</div>
+                        <p>Learn to measure what matters and make data-driven decisions for exponential growth</p>
+                    </div>
+                </div>
+                <div class="meetup-item">
+                    <div class="meetup-dot"></div>
+                    <div class="meetup-content">
+                        <h4>🚀 Startup Pitch & Fund-Raising Round</h4>
+                        <div class="meetup-date">📅 Every Sunday - 5:00 PM</div>
+                        <p>Pitching practice, investor insights, and funding strategies for early-stage startups</p>
+                    </div>
+                </div>
+                <div class="meetup-item">
+                    <div class="meetup-dot"></div>
+                    <div class="meetup-content">
+                        <h4>💡 Product-Market Fit Sprint</h4>
+                        <div class="meetup-date">📅 Every Sunday - 5:00 PM</div>
+                        <p>Master techniques to find and validate your product-market fit quickly</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta" id="join">
+        <div class="container">
+            <div class="cta-content">
+                <h2>Ready to Accelerate Your Growth?</h2>
+                <p>Join our thriving community of 500+ entrepreneurs and growth leaders in Bangalore. Connect, collaborate, and grow together!</p>
+                <a href="https://wa.me/918553759008?text=Hi%20BLR%20Growth%20Hackers%2C%20I%20want%20to%20join%20your%20community!%20Please%20add%20me%20to%20the%20group." class="whatsapp-btn" target="_blank">
+                    <i class="fab fa-whatsapp"></i> Join Now via WhatsApp
+                </a>
+                <p style="margin-top: 20px; font-size: 1em;">
+                    <strong>WhatsApp: +91 8553759008</strong>
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <p>&copy; 2026 BLR Growth Hackers Community. All rights reserved.</p>
+            <p>Empowering entrepreneurs and business growth leaders in Bangalore</p>
+            <div class="social-links">
+                <a href="#" title="LinkedIn"><i class="fab fa-linkedin"></i></a>
+                <a href="#" title="Twitter"><i class="fab fa-twitter"></i></a>
+                <a href="#" title="Instagram"><i class="fab fa-instagram"></i></a>
+                <a href="https://wa.me/918553759008" title="WhatsApp"><i class="fab fa-whatsapp"></i></a>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Smooth scrolling for navigation links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+
+        // Active nav link highlighting
+        window.addEventListener('scroll', () => {
+            let current = '';
+            document.querySelectorAll('section').forEach(section => {
+                const sectionTop = section.offsetTop;
+                const sectionHeight = section.clientHeight;
+                if (pageYOffset >= sectionTop - 200) {
+                    current = section.getAttribute('id');
+                }
+            });
+
+            document.querySelectorAll('nav a').forEach(link => {
+                link.classList.remove('active');
+                if (link.getAttribute('href').slice(1) === current) {
+                    link.style.color = '#ffc107';
+                }
+            });
+        });
+
+        // Animation on scroll
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -100px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.animation = 'slideUp 0.6s ease-out forwards';
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.topic-card, .vmv-card, .stat-card').forEach(card => {
+            card.style.opacity = '0';
+            observer.observe(card);
+        });
+    </script>
+</body>
+</html>
