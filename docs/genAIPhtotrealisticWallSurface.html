@@ -1,0 +1,1913 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diffusion-Based Wall Surface Simulation | GenAI Research Blog</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --primary:   #1a1a2e;
+            --accent1:   #e94560;
+            --accent2:   #0f3460;
+            --accent3:   #533483;
+            --gold:      #f5a623;
+            --green:     #00d2a0;
+            --blue-lt:   #4fc3f7;
+            --text:      #e0e0e0;
+            --card-bg:   #16213e;
+            --white:     #ffffff;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        /* ── HEADER ─────────────────────────────────── */
+        header {
+            background: linear-gradient(135deg, #1a1a2e 0%, #0f3460 50%, #533483 100%);
+            color: white;
+            padding: 50px 20px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        header::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+            animation: bgMove 20s linear infinite;
+        }
+
+        @keyframes bgMove {
+            0%   { background-position: 0 0; }
+            100% { background-position: 60px 60px; }
+        }
+
+        .header-badge {
+            display: inline-block;
+            background: rgba(229,69,96,0.25);
+            border: 1px solid #e94560;
+            color: #e94560;
+            padding: 4px 14px;
+            border-radius: 20px;
+            font-size: 0.78em;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-bottom: 18px;
+        }
+
+        header h1 {
+            font-size: clamp(1.6em, 4vw, 3em);
+            font-weight: 800;
+            line-height: 1.2;
+            margin-bottom: 14px;
+            position: relative;
+        }
+
+        header h1 span {
+            background: linear-gradient(90deg, #f5a623, #e94560, #4fc3f7);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header-meta {
+            font-size: 0.9em;
+            opacity: 0.7;
+            margin-top: 18px;
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            flex-wrap: wrap;
+        }
+
+        .header-meta span { display: flex; align-items: center; gap: 6px; }
+
+        /* ── CONTENT WRAPPER ─────────────────────────── */
+        .content { padding: 50px 40px; }
+
+        @media (max-width: 768px) { .content { padding: 30px 20px; } }
+
+        /* ── SECTION TITLES ──────────────────────────── */
+        .section-label {
+            font-size: 0.75em;
+            font-weight: 700;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            color: #e94560;
+            margin-bottom: 6px;
+        }
+
+        .section-title {
+            font-size: 1.9em;
+            font-weight: 800;
+            color: #1a1a2e;
+            margin-bottom: 8px;
+            border-left: 5px solid #e94560;
+            padding-left: 16px;
+        }
+
+        .section-sub {
+            color: #666;
+            font-size: 1em;
+            margin-bottom: 30px;
+            padding-left: 21px;
+            line-height: 1.7;
+        }
+
+        .section-block { margin-bottom: 70px; }
+
+        /* ── CORE IDEA HERO ──────────────────────────── */
+        .core-hero {
+            background: linear-gradient(135deg, #1a1a2e 0%, #0f3460 100%);
+            border-radius: 16px;
+            padding: 40px;
+            color: white;
+            margin-bottom: 30px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            align-items: center;
+        }
+
+        @media (max-width: 900px) { .core-hero { grid-template-columns: 1fr; } }
+
+        .core-text h2 { font-size: 1.6em; color: #f5a623; margin-bottom: 14px; }
+        .core-text p  { line-height: 1.8; opacity: 0.9; margin-bottom: 12px; font-size: 0.97em; }
+
+        .core-visual {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        /* ── DIFFUSION NOISE ANIMATION ───────────────── */
+        .noise-strip {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .noise-strip .label { font-size: 0.7em; opacity: 0.7; min-width: 50px; text-align: center; }
+
+        .noise-canvas {
+            width: 60px; height: 60px;
+            border-radius: 8px;
+            position: relative;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+
+        .wall-base { background: linear-gradient(135deg, #c8b89a 0%, #a89070 50%, #c2a882 100%); width: 100%; height: 100%; }
+        .wall-n1 { background: linear-gradient(135deg, #c8b89a 0%, #a89070 50%, #c2a882 100%); width: 100%; height: 100%; filter: url(#noiseFilter1); }
+
+        .noise-step {
+            width: 60px; height: 60px;
+            border-radius: 8px;
+            animation: noisePulse 3s ease-in-out infinite;
+            flex-shrink: 0;
+        }
+
+        @keyframes noisePulse {
+            0%,100% { opacity: 1; }
+            50%      { opacity: 0.7; }
+        }
+
+        .ns0 { background: linear-gradient(135deg, #c8b89a, #a89070, #c2a882); }
+        .ns1 { background: linear-gradient(135deg, #b8a8a0 40%, #8888aa 100%); animation-delay: 0.3s; }
+        .ns2 { background: linear-gradient(135deg, #9898b8 30%, #7070a8 100%); animation-delay: 0.6s; }
+        .ns3 { background: linear-gradient(135deg, #8080b0 20%, #606090 100%); animation-delay: 0.9s; }
+        .ns4 { background: repeating-linear-gradient(45deg, #888 0px, #444 2px, #888 4px); animation-delay: 1.2s; }
+
+        .arrow-anim {
+            font-size: 1.2em;
+            animation: arrowPulse 1.5s ease-in-out infinite;
+            color: #f5a623;
+        }
+
+        @keyframes arrowPulse {
+            0%,100% { transform: translateX(0); opacity: 1; }
+            50%      { transform: translateX(4px); opacity: 0.6; }
+        }
+
+        .reverse-arrow { animation-direction: reverse; color: #00d2a0; }
+
+        .process-label {
+            font-size: 0.72em;
+            text-align: center;
+            color: rgba(255,255,255,0.6);
+            margin-top: 4px;
+        }
+
+        /* ── EQUATION BOX ────────────────────────────── */
+        .eq-box {
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 10px;
+            padding: 16px 20px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.88em;
+            color: #4fc3f7;
+            margin-top: 16px;
+            line-height: 2;
+        }
+
+        .eq-comment { color: rgba(255,255,255,0.4); font-size: 0.85em; }
+
+        /* ── PROBLEM DECOMP ──────────────────────────── */
+        .prob-grid {
+            display: grid;
+            grid-template-columns: repeat(3,1fr);
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        @media (max-width: 900px) { .prob-grid { grid-template-columns: 1fr; } }
+
+        .prob-card {
+            border-radius: 14px;
+            padding: 28px;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.3s, box-shadow 0.3s;
+            cursor: default;
+        }
+
+        .prob-card:hover { transform: translateY(-6px); box-shadow: 0 16px 40px rgba(0,0,0,0.2); }
+
+        .prob-card::before {
+            content: '';
+            position: absolute;
+            top: -40px; right: -40px;
+            width: 100px; height: 100px;
+            border-radius: 50%;
+            opacity: 0.12;
+        }
+
+        .pc-1 { background: linear-gradient(135deg, #0f3460, #1a1a2e); color: white; }
+        .pc-1::before { background: #4fc3f7; }
+
+        .pc-2 { background: linear-gradient(135deg, #3c1053, #533483); color: white; }
+        .pc-2::before { background: #f5a623; }
+
+        .pc-3 { background: linear-gradient(135deg, #1b1b4b, #e94560); color: white; }
+        .pc-3::before { background: #00d2a0; }
+
+        .prob-num {
+            font-size: 3em;
+            font-weight: 900;
+            opacity: 0.15;
+            position: absolute;
+            top: 10px; right: 20px;
+            line-height: 1;
+        }
+
+        .prob-icon { font-size: 2.4em; margin-bottom: 14px; }
+
+        .prob-card h3 { font-size: 1.15em; margin-bottom: 10px; color: #f5a623; }
+
+        .prob-card p  { font-size: 0.88em; line-height: 1.7; opacity: 0.9; }
+
+        .prob-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+
+        .prob-tag {
+            font-size: 0.7em;
+            padding: 3px 10px;
+            border-radius: 20px;
+            background: rgba(255,255,255,0.12);
+            border: 1px solid rgba(255,255,255,0.2);
+            font-weight: 600;
+        }
+
+        /* ── ARCHITECTURE DIAGRAM ────────────────────── */
+        .arch-wrapper {
+            background: #f9faff;
+            border: 2px solid #e0e7ff;
+            border-radius: 16px;
+            padding: 40px 30px;
+            overflow-x: auto;
+        }
+
+        .arch-title {
+            text-align: center;
+            font-size: 1.1em;
+            font-weight: 700;
+            color: #1a1a2e;
+            margin-bottom: 30px;
+            letter-spacing: 1px;
+        }
+
+        /* ── SVG ARCHITECTURE ────────────────────────── */
+        .arch-svg-container {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+        }
+
+        .arch-svg-container svg { max-width: 100%; height: auto; }
+
+        /* ── ANIMATED PIPELINE FLOW ──────────────────── */
+        .pipeline-flow {
+            display: flex;
+            align-items: stretch;
+            gap: 0;
+            margin: 30px 0;
+            overflow-x: auto;
+            padding-bottom: 10px;
+        }
+
+        .pipe-stage {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 130px;
+        }
+
+        .pipe-box {
+            border-radius: 10px;
+            padding: 14px 10px;
+            text-align: center;
+            width: 120px;
+            position: relative;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .pipe-box:hover { transform: scale(1.07); box-shadow: 0 8px 24px rgba(0,0,0,0.15); }
+
+        .pipe-box .pb-icon { font-size: 1.8em; margin-bottom: 6px; }
+        .pipe-box .pb-title { font-size: 0.72em; font-weight: 700; line-height: 1.3; }
+        .pipe-box .pb-sub   { font-size: 0.64em; opacity: 0.75; margin-top: 4px; }
+
+        .pb-input  { background: linear-gradient(135deg, #0f3460, #1a5276); color: white; }
+        .pb-enc    { background: linear-gradient(135deg, #1a237e, #283593); color: white; }
+        .pb-latent { background: linear-gradient(135deg, #4a148c, #6a1b9a); color: white; }
+        .pb-cond   { background: linear-gradient(135deg, #bf360c, #e64a19); color: white; }
+        .pb-unet   { background: linear-gradient(135deg, #1b5e20, #2e7d32); color: white; }
+        .pb-dec    { background: linear-gradient(135deg, #0d47a1, #1565c0); color: white; }
+        .pb-output { background: linear-gradient(135deg, #e65100, #ef6c00); color: white; }
+        .pb-dom    { background: linear-gradient(135deg, #880e4f, #ad1457); color: white; }
+
+        .pipe-connector {
+            display: flex;
+            align-items: center;
+            padding: 0 4px;
+            margin-top: 25px;
+        }
+
+        .pipe-arrow {
+            width: 40px;
+            height: 3px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            position: relative;
+        }
+
+        .pipe-arrow::after {
+            content: '';
+            position: absolute;
+            right: -1px; top: -5px;
+            width: 0; height: 0;
+            border-top: 6px solid transparent;
+            border-bottom: 6px solid transparent;
+            border-left: 10px solid #764ba2;
+        }
+
+        .pipe-arrow.animated::before {
+            content: '';
+            position: absolute;
+            left: 0; top: -1px;
+            width: 12px; height: 5px;
+            background: #f5a623;
+            border-radius: 3px;
+            animation: flowDot 1.5s linear infinite;
+        }
+
+        @keyframes flowDot {
+            from { left: 0; opacity: 1; }
+            to   { left: calc(100% - 12px); opacity: 0.3; }
+        }
+
+        /* ── UNET DIAGRAM ────────────────────────────── */
+        .unet-grid {
+            display: grid;
+            grid-template-columns: 1fr 80px 1fr;
+            gap: 0;
+            margin: 30px auto;
+            max-width: 860px;
+            align-items: stretch;
+        }
+
+        .unet-col {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .unet-enc-col { align-items: flex-end; }
+        .unet-dec-col { align-items: flex-start; }
+        .unet-bot-col { align-items: center; justify-content: center; }
+
+        .unet-block {
+            border-radius: 8px;
+            padding: 10px 16px;
+            font-size: 0.78em;
+            font-weight: 600;
+            text-align: center;
+            position: relative;
+            transition: all 0.3s;
+            cursor: default;
+        }
+
+        .unet-block:hover { transform: scale(1.04); z-index: 2; box-shadow: 0 6px 20px rgba(0,0,0,0.2); }
+
+        .ub-enc1  { background: #e3f2fd; color: #0d47a1; border: 2px solid #1565c0; width: 180px; }
+        .ub-enc2  { background: #e8eaf6; color: #1a237e; border: 2px solid #283593; width: 160px; }
+        .ub-enc3  { background: #ede7f6; color: #4a148c; border: 2px solid #6a1b9a; width: 140px; }
+        .ub-enc4  { background: #fce4ec; color: #880e4f; border: 2px solid #ad1457; width: 120px; }
+        .ub-bot   { background: linear-gradient(135deg, #1a1a2e, #0f3460); color: white; width: 120px; padding: 16px; }
+        .ub-dec4  { background: #fce4ec; color: #880e4f; border: 2px solid #ad1457; width: 120px; }
+        .ub-dec3  { background: #ede7f6; color: #4a148c; border: 2px solid #6a1b9a; width: 140px; }
+        .ub-dec2  { background: #e8eaf6; color: #1a237e; border: 2px solid #283593; width: 160px; }
+        .ub-dec1  { background: #e3f2fd; color: #0d47a1; border: 2px solid #1565c0; width: 180px; }
+        .ub-skip  { position: absolute; right: -24px; top: 50%; transform: translateY(-50%); font-size: 1em; }
+
+        .unet-label {
+            text-align: center;
+            font-size: 0.8em;
+            font-weight: 700;
+            color: #888;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+
+        .unet-skip-line {
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 0;
+        }
+
+        /* ── SKIP CONNECTIONS (CSS only) ─────────────── */
+        .skip-outer {
+            display: grid;
+            grid-template-columns: 1fr 80px 1fr;
+            gap: 0;
+            margin: 30px auto;
+            max-width: 860px;
+        }
+
+        /* ── DEFECT TAXONOMY ─────────────────────────── */
+        .defect-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 16px;
+            margin: 20px 0;
+        }
+
+        .defect-card {
+            border-radius: 12px;
+            padding: 22px 16px;
+            text-align: center;
+            transition: all 0.3s;
+            cursor: default;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .defect-card:hover { transform: translateY(-5px); box-shadow: 0 12px 30px rgba(0,0,0,0.15); }
+
+        .defect-card::after {
+            content: '';
+            position: absolute;
+            bottom: 0; left: 0; right: 0;
+            height: 3px;
+        }
+
+        .df-crack  { background: #fff3e0; } .df-crack::after  { background: #ef6c00; }
+        .df-effl   { background: #e8f5e9; } .df-effl::after   { background: #2e7d32; }
+        .df-peel   { background: #fce4ec; } .df-peel::after   { background: #c62828; }
+        .df-mold   { background: #e8eaf6; } .df-mold::after   { background: #4527a0; }
+        .df-spall  { background: #e3f2fd; } .df-spall::after  { background: #0277bd; }
+        .df-corr   { background: #fff8e1; } .df-corr::after   { background: #f9a825; }
+
+        .defect-card .dc-icon  { font-size: 2.4em; margin-bottom: 10px; }
+        .defect-card .dc-name  { font-size: 0.82em; font-weight: 700; color: #333; margin-bottom: 6px; }
+        .defect-card .dc-tech  { font-size: 0.72em; color: #777; line-height: 1.4; }
+
+        /* ── CONDITIONING DIAGRAM ────────────────────── */
+        .cond-diagram {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 16px;
+            align-items: center;
+            margin: 24px 0;
+        }
+
+        @media (max-width: 800px) { .cond-diagram { grid-template-columns: 1fr; } }
+
+        .cond-col { display: flex; flex-direction: column; gap: 10px; }
+
+        .cond-item {
+            border-radius: 10px;
+            padding: 14px 16px;
+            font-size: 0.83em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.3s;
+        }
+
+        .cond-item:hover { transform: scale(1.03); box-shadow: 0 6px 20px rgba(0,0,0,0.1); }
+
+        .ci-text   { background: #e3f2fd; border-left: 4px solid #1565c0; }
+        .ci-mask   { background: #fce4ec; border-left: 4px solid #c62828; }
+        .ci-mat    { background: #e8f5e9; border-left: 4px solid #2e7d32; }
+        .ci-edge   { background: #f3e5f5; border-left: 4px solid #6a1b9a; }
+        .ci-depth  { background: #fff8e1; border-left: 4px solid #f9a825; }
+        .ci-style  { background: #e8eaf6; border-left: 4px solid #1a237e; }
+
+        .cond-center {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .cond-center-box {
+            background: linear-gradient(135deg, #1a1a2e, #533483);
+            color: white;
+            border-radius: 14px;
+            padding: 24px 20px;
+            text-align: center;
+            width: 140px;
+            box-shadow: 0 8px 30px rgba(83,52,131,0.4);
+            animation: glowPulse 3s ease-in-out infinite;
+        }
+
+        @keyframes glowPulse {
+            0%,100% { box-shadow: 0 8px 30px rgba(83,52,131,0.4); }
+            50%      { box-shadow: 0 8px 50px rgba(83,52,131,0.8), 0 0 20px rgba(79,195,247,0.3); }
+        }
+
+        .cond-center-box .cc-icon  { font-size: 2em; margin-bottom: 8px; }
+        .cond-center-box .cc-title { font-size: 0.85em; font-weight: 700; color: #f5a623; }
+        .cond-center-box .cc-sub   { font-size: 0.7em; opacity: 0.8; margin-top: 4px; }
+
+        .cond-arrow {
+            font-size: 1.6em;
+            color: #667eea;
+            animation: arrowPulse 2s ease-in-out infinite;
+        }
+
+        /* ── DOMAIN ADAPTATION ───────────────────────── */
+        .domain-strip {
+            display: grid;
+            grid-template-columns: 1fr 80px 1fr;
+            gap: 0;
+            align-items: center;
+            margin: 24px 0;
+        }
+
+        @media (max-width: 800px) { .domain-strip { grid-template-columns: 1fr; } }
+
+        .domain-col {
+            border-radius: 14px;
+            padding: 28px;
+        }
+
+        .dom-real { background: linear-gradient(135deg, #e8f5e9, #c8e6c9); border: 2px solid #2e7d32; }
+        .dom-syn  { background: linear-gradient(135deg, #e3f2fd, #bbdefb); border: 2px solid #1565c0; }
+
+        .domain-col h4 { font-size: 1em; font-weight: 700; margin-bottom: 12px; }
+
+        .domain-col .dom-items { display: flex; flex-direction: column; gap: 7px; }
+
+        .dom-item {
+            font-size: 0.8em;
+            padding: 6px 12px;
+            border-radius: 6px;
+            background: rgba(255,255,255,0.65);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .domain-center-col {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+
+        .dom-bridge {
+            background: linear-gradient(135deg, #533483, #e94560);
+            color: white;
+            border-radius: 12px;
+            padding: 16px 12px;
+            text-align: center;
+            font-size: 0.75em;
+            font-weight: 700;
+            width: 70px;
+            box-shadow: 0 6px 20px rgba(233,69,96,0.3);
+        }
+
+        .dom-bridge .db-icon  { font-size: 1.5em; margin-bottom: 6px; }
+
+        /* ── TRAINING STRATEGY ───────────────────────── */
+        .train-timeline {
+            position: relative;
+            padding-left: 40px;
+            margin: 20px 0;
+        }
+
+        .train-timeline::before {
+            content: '';
+            position: absolute;
+            left: 14px; top: 0; bottom: 0;
+            width: 3px;
+            background: linear-gradient(180deg, #667eea, #764ba2, #e94560);
+        }
+
+        .train-step {
+            position: relative;
+            margin-bottom: 28px;
+            padding: 18px 20px;
+            background: #f9faff;
+            border-radius: 10px;
+            border: 1px solid #e0e7ff;
+            transition: all 0.3s;
+        }
+
+        .train-step:hover { background: #eef2ff; transform: translateX(4px); }
+
+        .train-step::before {
+            content: '';
+            position: absolute;
+            left: -32px; top: 22px;
+            width: 14px; height: 14px;
+            border-radius: 50%;
+            background: #667eea;
+            border: 3px solid white;
+            box-shadow: 0 0 0 3px #667eea;
+        }
+
+        .train-step:nth-child(2)::before { background: #764ba2; box-shadow: 0 0 0 3px #764ba2; }
+        .train-step:nth-child(3)::before { background: #e94560; box-shadow: 0 0 0 3px #e94560; }
+        .train-step:nth-child(4)::before { background: #f5a623; box-shadow: 0 0 0 3px #f5a623; }
+
+        .ts-phase { font-size: 0.7em; font-weight: 700; letter-spacing: 2px; color: #667eea; margin-bottom: 4px; }
+        .ts-title { font-size: 1em; font-weight: 700; color: #1a1a2e; margin-bottom: 6px; }
+        .ts-desc  { font-size: 0.85em; color: #555; line-height: 1.6; }
+
+        /* ── METRICS TABLE ───────────────────────────── */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 16px;
+            margin: 20px 0;
+        }
+
+        .metric-card {
+            border-radius: 12px;
+            padding: 22px 16px;
+            text-align: center;
+            border: 2px solid transparent;
+            transition: all 0.3s;
+            background: white;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.06);
+        }
+
+        .metric-card:hover { transform: translateY(-4px); box-shadow: 0 12px 30px rgba(0,0,0,0.12); }
+
+        .mc-1 { border-color: #1565c0; }
+        .mc-2 { border-color: #6a1b9a; }
+        .mc-3 { border-color: #2e7d32; }
+        .mc-4 { border-color: #e94560; }
+        .mc-5 { border-color: #f5a623; }
+        .mc-6 { border-color: #00bcd4; }
+
+        .metric-card .m-val  { font-size: 2em; font-weight: 800; line-height: 1; }
+        .metric-card .m-name { font-size: 0.78em; font-weight: 600; color: #555; margin-top: 6px; }
+        .metric-card .m-desc { font-size: 0.68em; color: #888; margin-top: 4px; }
+
+        .mc-1 .m-val { color: #1565c0; }
+        .mc-2 .m-val { color: #6a1b9a; }
+        .mc-3 .m-val { color: #2e7d32; }
+        .mc-4 .m-val { color: #e94560; }
+        .mc-5 .m-val { color: #f5a623; }
+        .mc-6 .m-val { color: #00bcd4; }
+
+        /* ── INFO BOXES ──────────────────────────────── */
+        .info-box {
+            border-radius: 10px;
+            padding: 20px 24px;
+            margin: 20px 0;
+            display: flex;
+            gap: 16px;
+            align-items: flex-start;
+        }
+
+        .info-box .ib-icon { font-size: 1.8em; flex-shrink: 0; }
+        .info-box .ib-text { font-size: 0.88em; line-height: 1.7; }
+        .info-box .ib-text strong { display: block; margin-bottom: 4px; font-size: 1.02em; }
+
+        .ib-blue   { background: #e3f2fd; border-left: 4px solid #1565c0; }
+        .ib-purple { background: #ede7f6; border-left: 4px solid #6a1b9a; }
+        .ib-green  { background: #e8f5e9; border-left: 4px solid #2e7d32; }
+        .ib-orange { background: #fff3e0; border-left: 4px solid #e65100; }
+
+        /* ── TECH STACK BADGES ───────────────────────── */
+        .tech-badges {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 16px 0;
+        }
+
+        .tech-badge {
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 0.78em;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+
+        .tb-blue   { background: #e3f2fd; color: #0d47a1; border: 1.5px solid #1565c0; }
+        .tb-purple { background: #ede7f6; color: #4a148c; border: 1.5px solid #6a1b9a; }
+        .tb-green  { background: #e8f5e9; color: #1b5e20; border: 1.5px solid #2e7d32; }
+        .tb-red    { background: #fce4ec; color: #880e4f; border: 1.5px solid #c62828; }
+        .tb-orange { background: #fff3e0; color: #bf360c; border: 1.5px solid #e65100; }
+        .tb-dark   { background: #1a1a2e; color: #4fc3f7; border: 1.5px solid #4fc3f7; }
+
+        /* ── ANIMATED ARCH SVG STYLES ────────────────── */
+        @keyframes dash { to { stroke-dashoffset: 0; } }
+        @keyframes fadeInScale { from { opacity:0; transform:scale(0.8); } to { opacity:1; transform:scale(1); } }
+        @keyframes floatUp  { 0%,100%{transform:translateY(0);} 50%{transform:translateY(-6px);} }
+
+        .arch-node { animation: fadeInScale 0.5s ease-out both; }
+        .arch-path { stroke-dasharray: 300; stroke-dashoffset: 300; animation: dash 1s ease-out forwards; }
+
+        /* ── RESULT CARDS ────────────────────────────── */
+        .result-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .result-card {
+            border-radius: 12px;
+            padding: 24px;
+            border: 1.5px solid #e0e7ff;
+            transition: all 0.3s;
+            background: white;
+        }
+
+        .result-card:hover { border-color: #667eea; box-shadow: 0 8px 24px rgba(102,126,234,0.15); transform: translateY(-4px); }
+
+        .rc-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+        .rc-icon   { font-size: 1.8em; }
+        .rc-title  { font-size: 1em; font-weight: 700; color: #1a1a2e; }
+        .rc-body   { font-size: 0.85em; color: #555; line-height: 1.7; }
+        .rc-tag    { display: inline-block; margin-top: 10px; font-size: 0.72em; padding: 3px 10px; border-radius: 10px; font-weight: 700; }
+
+        .rt-1 { background: #e3f2fd; color: #0d47a1; }
+        .rt-2 { background: #e8f5e9; color: #1b5e20; }
+        .rt-3 { background: #fce4ec; color: #880e4f; }
+        .rt-4 { background: #fff3e0; color: #bf360c; }
+
+        /* ── FOOTER ──────────────────────────────────── */
+        footer {
+            background: #1a1a2e;
+            color: white;
+            text-align: center;
+            padding: 30px 20px;
+            font-size: 0.9em;
+        }
+
+        footer p { opacity: 0.8; line-height: 1.8; }
+        footer strong { color: #f5a623; }
+        footer .footer-links { display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; margin-top: 12px; }
+        footer .footer-links a { color: #4fc3f7; text-decoration: none; font-size: 0.85em; }
+        footer .footer-links a:hover { color: #f5a623; }
+
+        /* ── SCROLL REVEAL ANIMATION ─────────────────── */
+        .reveal {
+            opacity: 0;
+            transform: translateY(28px);
+            transition: opacity 0.7s ease, transform 0.7s ease;
+        }
+        .reveal.visible { opacity: 1; transform: translateY(0); }
+    </style>
+</head>
+<body>
+<div class="container">
+
+    <!-- ═══════════════════ HEADER ════════════════════ -->
+    <header>
+        <div class="header-badge">GenAI Research · Vision AI · April 2026</div>
+        <h1>Diffusion-Based <span>Photorealistic Wall-Surface</span><br>Simulation & Defect Synthesis</h1>
+        <p style="opacity:0.8;margin-top:12px;font-size:1em;">Research &amp; Innovation in Generative AI for Domain Adaptation in Industrial Inspection</p>
+        <div class="header-meta">
+            <span>🧠 Diffusion Models</span>
+            <span>🧱 Wall Surface AI</span>
+            <span>🔬 Domain Adaptation</span>
+            <span>⚙️ Defect Synthesis</span>
+            <span>📐 ControlNet · LDM · U-Net</span>
+        </div>
+    </header>
+
+    <!-- ═══════════════════ CONTENT ═══════════════════ -->
+    <div class="content">
+
+        <!-- ────────────────────────────────────────────
+             SECTION 0 — ABSTRACT
+        ──────────────────────────────────────────────── -->
+        <div class="section-block reveal">
+            <div class="info-box ib-blue">
+                <div class="ib-icon">📋</div>
+                <div class="ib-text">
+                    <strong>Abstract</strong>
+                    This research programme proposes using <em>latent diffusion models (LDM)</em> to synthesise
+                    photorealistic wall-surface textures, generate diverse structural defects on demand, and close
+                    the simulation-to-real domain gap for automated visual inspection systems. The pipeline
+                    combines a <em>surface-conditioned U-Net denoiser</em>, a <em>multi-modal defect controller</em>
+                    (ControlNet-style), and an <em>adversarial domain alignment module</em> to produce inspection
+                    data that is both perceptually realistic and semantically accurate — enabling robust detector
+                    training without costly real-world defect collection.
+                </div>
+            </div>
+        </div>
+
+        <!-- ────────────────────────────────────────────
+             SECTION 1 — CORE IDEA
+        ──────────────────────────────────────────────── -->
+        <div class="section-block reveal">
+            <div class="section-label">Section 01</div>
+            <h2 class="section-title">Core Idea: Diffusion for Wall-Surface Simulation</h2>
+            <p class="section-sub">
+                Diffusion models learn to <em>reverse a noise process</em>: given a wall image progressively
+                corrupted into pure Gaussian noise over T timesteps, the model learns to denoise it back — and by
+                starting from random noise with conditioning signals, it can <em>generate any wall texture or
+                defect type</em> on demand.
+            </p>
+
+            <div class="core-hero">
+                <!-- Left: conceptual text -->
+                <div class="core-text">
+                    <h2>🧱 Why Diffusion for Walls?</h2>
+                    <p>Traditional rendering engines produce geometrically correct but perceptually
+                    unconvincing surface textures — subtle features like micro-cracks, uneven paint sheens,
+                    efflorescence patterns, and shadow discontinuities across material boundaries are
+                    extremely hard to script by hand.</p>
+                    <p>Diffusion models operate in a <em>continuous latent space</em> and are trained on
+                    millions of real-world wall images, so they automatically encode rich texture priors —
+                    and can be steered with text prompts, edge maps, depth cues, or defect masks to produce
+                    exactly the sample needed for inspection dataset augmentation.</p>
+                    <p>The key insight: <strong>the denoising U-Net is a learnable prior over all physically
+                    plausible wall appearances</strong>, and conditioning allows controlled synthesis of rare
+                    but important failure modes.</p>
+
+                    <div class="eq-box">
+                        <span style="color:#00d2a0;">Forward (noising):</span>&nbsp;
+                        q(x<sub>t</sub>|x<sub>t-1</sub>) = 𝒩(x<sub>t</sub>; √(1-β<sub>t</sub>)·x<sub>t-1</sub>, β<sub>t</sub>·I)<br>
+                        <span style="color:#f5a623;">Reverse (denoising):</span>&nbsp;
+                        p<sub>θ</sub>(x<sub>t-1</sub>|x<sub>t</sub>) = 𝒩(μ<sub>θ</sub>(x<sub>t</sub>,t,c), Σ<sub>θ</sub>)<br>
+                        <span class="eq-comment">// c = conditioning signal (text, mask, edge, material)</span><br>
+                        <span style="color:#4fc3f7;">Latent LDM loss:</span>&nbsp;
+                        𝓛 = 𝔼[‖ε − ε<sub>θ</sub>(z<sub>t</sub>, t, c)‖²]
+                    </div>
+                </div>
+
+                <!-- Right: animated noise/denoise strip -->
+                <div class="core-visual">
+                    <div style="color:#f5a623;font-size:0.85em;font-weight:700;margin-bottom:8px;">
+                        ▶ Forward Diffusion (Real Wall → Pure Noise)
+                    </div>
+                    <div class="noise-strip" id="noiseStrip">
+                        <div>
+                            <div class="noise-step ns0" style="border:2px solid rgba(255,255,255,0.3);"></div>
+                            <div class="process-label">x₀<br>Real</div>
+                        </div>
+                        <div class="arrow-anim">→</div>
+                        <div>
+                            <div class="noise-step ns1"></div>
+                            <div class="process-label">x<sub>T/4</sub></div>
+                        </div>
+                        <div class="arrow-anim" style="animation-delay:0.2s;">→</div>
+                        <div>
+                            <div class="noise-step ns2"></div>
+                            <div class="process-label">x<sub>T/2</sub></div>
+                        </div>
+                        <div class="arrow-anim" style="animation-delay:0.4s;">→</div>
+                        <div>
+                            <div class="noise-step ns3"></div>
+                            <div class="process-label">x<sub>3T/4</sub></div>
+                        </div>
+                        <div class="arrow-anim" style="animation-delay:0.6s;">→</div>
+                        <div>
+                            <div class="noise-step ns4"></div>
+                            <div class="process-label">x<sub>T</sub><br>Noise</div>
+                        </div>
+                    </div>
+
+                    <div style="color:#00d2a0;font-size:0.85em;font-weight:700;margin:16px 0 8px;">
+                        ◀ Reverse Diffusion (Noise → Synthetic Wall + Defect)
+                    </div>
+                    <div class="noise-strip">
+                        <div>
+                            <div class="noise-step ns4"></div>
+                            <div class="process-label">ε~𝒩(0,I)</div>
+                        </div>
+                        <div class="arrow-anim reverse-arrow" style="animation-direction:reverse;">→</div>
+                        <div>
+                            <div class="noise-step ns3"></div>
+                            <div class="process-label">x̂<sub>3T/4</sub></div>
+                        </div>
+                        <div class="arrow-anim reverse-arrow" style="animation-delay:0.2s;">→</div>
+                        <div>
+                            <div class="noise-step ns2"></div>
+                            <div class="process-label">x̂<sub>T/2</sub></div>
+                        </div>
+                        <div class="arrow-anim reverse-arrow" style="animation-delay:0.4s;">→</div>
+                        <div>
+                            <!-- defect wall: orange-red crack tones -->
+                            <div class="noise-step" style="background:linear-gradient(135deg,#c8b89a 60%,#8b4513 100%);border:2px solid rgba(255,255,255,0.3);animation-delay:0.6s;"></div>
+                            <div class="process-label">x̂<sub>T/4</sub></div>
+                        </div>
+                        <div class="arrow-anim reverse-arrow" style="animation-delay:0.8s;">→</div>
+                        <div>
+                            <div class="noise-step" style="background:linear-gradient(135deg,#c2a882 55%,#7a3b10 45%,#c2a882 100%);animation-delay:1s;"></div>
+                            <div class="process-label">x̂₀<br>Defect</div>
+                        </div>
+                    </div>
+
+                    <div style="margin-top:20px;background:rgba(255,255,255,0.06);border-radius:8px;padding:12px 14px;font-size:0.78em;color:rgba(255,255,255,0.7);line-height:1.6;">
+                        💡 <strong style="color:#f5a623;">Classifier-Free Guidance (CFG)</strong> steers the
+                        denoising trajectory toward the conditioning signal (defect type, material class, severity
+                        level) without requiring a separate classifier at inference time. Scale γ ∈ [1,12] trades
+                        diversity for adherence.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ────────────────────────────────────────────
+             SECTION 2 — PROBLEM DECOMPOSITION
+        ──────────────────────────────────────────────── -->
+        <div class="section-block reveal">
+            <div class="section-label">Section 02</div>
+            <h2 class="section-title">Problem Decomposition</h2>
+            <p class="section-sub">
+                The overarching research challenge decomposes into three tightly coupled sub-problems,
+                each addressed by a dedicated module in the shared diffusion backbone.
+            </p>
+
+            <div class="prob-grid">
+                <!-- P1 -->
+                <div class="prob-card pc-1">
+                    <div class="prob-num">01</div>
+                    <div class="prob-icon">🧱</div>
+                    <h3>Photorealistic Surface Synthesis</h3>
+                    <p>Generate geometrically and photometrically accurate wall-surface images including
+                    varied materials (concrete, plaster, brick, tile, painted drywall), lighting conditions,
+                    perspective, and fine surface micro-textures that fool supervised classifiers trained on
+                    real data.</p>
+                    <div class="prob-tags">
+                        <span class="prob-tag">Texture GAN → LDM</span>
+                        <span class="prob-tag">Material Prior VAE</span>
+                        <span class="prob-tag">BRDF Conditioning</span>
+                        <span class="prob-tag">Multi-scale Perceptual Loss</span>
+                    </div>
+                </div>
+                <!-- P2 -->
+                <div class="prob-card pc-2">
+                    <div class="prob-num">02</div>
+                    <div class="prob-icon">🔍</div>
+                    <h3>Defect Synthesis on Demand</h3>
+                    <p>Controllably insert realistic structural defects — cracks, efflorescence, delamination,
+                    spalling, mould growth, corrosion staining — at arbitrary locations and severity levels,
+                    paired with pixel-level segmentation masks for downstream detector supervision.</p>
+                    <div class="prob-tags">
+                        <span class="prob-tag">ControlNet Mask</span>
+                        <span class="prob-tag">Inpainting Diffusion</span>
+                        <span class="prob-tag">Severity Conditioning</span>
+                        <span class="prob-tag">Auto-Mask Generation</span>
+                    </div>
+                </div>
+                <!-- P3 -->
+                <div class="prob-card pc-3">
+                    <div class="prob-num">03</div>
+                    <div class="prob-icon">🔄</div>
+                    <h3>Sim-to-Real Domain Adaptation</h3>
+                    <p>Bridge the distribution gap between synthetically generated and real-world inspection
+                    images using adversarial training, cycle consistency in latent space, and feature
+                    alignment so that detectors trained on synthetic data perform well on real inspection
+                    cameras.</p>
+                    <div class="prob-tags">
+                        <span class="prob-tag">Latent CycleGAN</span>
+                        <span class="prob-tag">Domain Classifier</span>
+                        <span class="prob-tag">Feature Alignment Loss</span>
+                        <span class="prob-tag">Style Transfer</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sub-problem connections -->
+            <div class="info-box ib-purple">
+                <div class="ib-icon">🔗</div>
+                <div class="ib-text">
+                    <strong>Why These Three Must Be Solved Jointly</strong>
+                    Solving P1 alone gives pretty images but no defect annotation. Solving P2 without P1
+                    produces unrealistic defect backgrounds that detectors learn to ignore. Without P3,
+                    even perfect synthetic data fails to transfer — models latch onto synthetic rendering
+                    artefacts. A unified diffusion backbone with shared weights addresses all three
+                    simultaneously through multi-task conditioning and a single end-to-end training objective.
+                </div>
+            </div>
+        </div>
+
+        <!-- ────────────────────────────────────────────
+             SECTION 3 — SYSTEM ARCHITECTURE
+        ──────────────────────────────────────────────── -->
+        <div class="section-block reveal">
+            <div class="section-label">Section 03</div>
+            <h2 class="section-title">System Architecture</h2>
+            <p class="section-sub">
+                An animated, block-diagram walkthrough of the full inference and training pipeline —
+                from raw wall images to synthetic paired datasets used to train inspection detectors.
+            </p>
+
+            <!-- ── TOP-LEVEL PIPELINE FLOW ── -->
+            <div class="arch-wrapper">
+                <div class="arch-title">🏗 End-to-End Pipeline Overview</div>
+
+                <!-- Animated SVG architecture diagram -->
+                <div class="arch-svg-container">
+                    <svg viewBox="0 0 1100 520" width="1100" xmlns="http://www.w3.org/2000/svg"
+                         style="font-family:'Segoe UI',sans-serif;">
+                        <defs>
+                            <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                                <polygon points="0 0,10 3.5,0 7" fill="#667eea"/>
+                            </marker>
+                            <marker id="arrowG" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                                <polygon points="0 0,10 3.5,0 7" fill="#00d2a0"/>
+                            </marker>
+                            <marker id="arrowO" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                                <polygon points="0 0,10 3.5,0 7" fill="#f5a623"/>
+                            </marker>
+                            <marker id="arrowR" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                                <polygon points="0 0,10 3.5,0 7" fill="#e94560"/>
+                            </marker>
+                            <linearGradient id="gBlue" x1="0" y1="0" x2="1" y2="1">
+                                <stop offset="0%" stop-color="#0f3460"/>
+                                <stop offset="100%" stop-color="#1565c0"/>
+                            </linearGradient>
+                            <linearGradient id="gPurple" x1="0" y1="0" x2="1" y2="1">
+                                <stop offset="0%" stop-color="#4a148c"/>
+                                <stop offset="100%" stop-color="#7b1fa2"/>
+                            </linearGradient>
+                            <linearGradient id="gGreen" x1="0" y1="0" x2="1" y2="1">
+                                <stop offset="0%" stop-color="#1b5e20"/>
+                                <stop offset="100%" stop-color="#388e3c"/>
+                            </linearGradient>
+                            <linearGradient id="gDark" x1="0" y1="0" x2="1" y2="1">
+                                <stop offset="0%" stop-color="#1a1a2e"/>
+                                <stop offset="100%" stop-color="#533483"/>
+                            </linearGradient>
+                            <linearGradient id="gOrange" x1="0" y1="0" x2="1" y2="1">
+                                <stop offset="0%" stop-color="#bf360c"/>
+                                <stop offset="100%" stop-color="#e65100"/>
+                            </linearGradient>
+                            <linearGradient id="gRed" x1="0" y1="0" x2="1" y2="1">
+                                <stop offset="0%" stop-color="#880e4f"/>
+                                <stop offset="100%" stop-color="#e94560"/>
+                            </linearGradient>
+                            <linearGradient id="gTeal" x1="0" y1="0" x2="1" y2="1">
+                                <stop offset="0%" stop-color="#004d40"/>
+                                <stop offset="100%" stop-color="#00897b"/>
+                            </linearGradient>
+                        </defs>
+
+                        <!-- ── Row 1: Inputs ────────────────── -->
+                        <!-- Real Wall Images -->
+                        <g class="arch-node" style="animation-delay:0.1s">
+                            <rect x="10" y="10" width="140" height="70" rx="10" fill="url(#gBlue)"/>
+                            <text x="80" y="34" text-anchor="middle" fill="#4fc3f7" font-size="18">🧱</text>
+                            <text x="80" y="52" text-anchor="middle" fill="white" font-size="11" font-weight="700">Real Wall Images</text>
+                            <text x="80" y="67" text-anchor="middle" fill="rgba(255,255,255,0.6)" font-size="9">H×W×3  (RGB)</text>
+                        </g>
+
+                        <!-- Text / Defect Prompt -->
+                        <g class="arch-node" style="animation-delay:0.2s">
+                            <rect x="170" y="10" width="140" height="70" rx="10" fill="url(#gOrange)"/>
+                            <text x="240" y="34" text-anchor="middle" fill="#ffd180" font-size="18">📝</text>
+                            <text x="240" y="52" text-anchor="middle" fill="white" font-size="11" font-weight="700">Text / Defect Prompt</text>
+                            <text x="240" y="67" text-anchor="middle" fill="rgba(255,255,255,0.6)" font-size="9">"crack, severity 3, concrete"</text>
+                        </g>
+
+                        <!-- Defect Mask -->
+                        <g class="arch-node" style="animation-delay:0.3s">
+                            <rect x="330" y="10" width="140" height="70" rx="10" fill="url(#gRed)"/>
+                            <text x="400" y="34" text-anchor="middle" fill="#ff80ab" font-size="18">🎭</text>
+                            <text x="400" y="52" text-anchor="middle" fill="white" font-size="11" font-weight="700">Defect Mask / Edge</text>
+                            <text x="400" y="67" text-anchor="middle" fill="rgba(255,255,255,0.6)" font-size="9">ControlNet hint map</text>
+                        </g>
+
+                        <!-- Material Class -->
+                        <g class="arch-node" style="animation-delay:0.4s">
+                            <rect x="490" y="10" width="140" height="70" rx="10" fill="url(#gGreen)"/>
+                            <text x="560" y="34" text-anchor="middle" fill="#b9f6ca" font-size="18">🏗</text>
+                            <text x="560" y="52" text-anchor="middle" fill="white" font-size="11" font-weight="700">Material / Style</text>
+                            <text x="560" y="67" text-anchor="middle" fill="rgba(255,255,255,0.6)" font-size="9">Brick | Concrete | Plaster</text>
+                        </g>
+
+                        <!-- Domain Label -->
+                        <g class="arch-node" style="animation-delay:0.5s">
+                            <rect x="650" y="10" width="140" height="70" rx="10" fill="url(#gTeal)"/>
+                            <text x="720" y="34" text-anchor="middle" fill="#b2dfdb" font-size="18">🔄</text>
+                            <text x="720" y="52" text-anchor="middle" fill="white" font-size="11" font-weight="700">Domain Label</text>
+                            <text x="720" y="67" text-anchor="middle" fill="rgba(255,255,255,0.6)" font-size="9">Real | Sim | Camera-A</text>
+                        </g>
+
+                        <!-- Severity Embedding -->
+                        <g class="arch-node" style="animation-delay:0.55s">
+                            <rect x="810" y="10" width="140" height="70" rx="10" fill="url(#gPurple)"/>
+                            <text x="880" y="34" text-anchor="middle" fill="#e1bee7" font-size="18">⚙️</text>
+                            <text x="880" y="52" text-anchor="middle" fill="white" font-size="11" font-weight="700">Severity Embedding</text>
+                            <text x="880" y="67" text-anchor="middle" fill="rgba(255,255,255,0.6)" font-size="9">Level 0–5 (ordinal)</text>
+                        </g>
+
+                        <!-- ── Row 2: Encoders ───────────────── -->
+                        <!-- VAE Encoder -->
+                        <g class="arch-node" style="animation-delay:0.6s">
+                            <rect x="10" y="160" width="140" height="70" rx="10" fill="url(#gBlue)"/>
+                            <text x="80" y="184" text-anchor="middle" fill="#4fc3f7" font-size="14">🔬</text>
+                            <text x="80" y="202" text-anchor="middle" fill="white" font-size="11" font-weight="700">VAE Encoder</text>
+                            <text x="80" y="218" text-anchor="middle" fill="rgba(255,255,255,0.6)" font-size="9">Image → z₀ ∈ ℝ^(h×w×4)</text>
+                        </g>
+
+                        <!-- Text Encoder (CLIP/T5) -->
+                        <g class="arch-node" style="animation-delay:0.65s">
+                            <rect x="170" y="160" width="140" height="70" rx="10" fill="url(#gOrange)"/>
+                            <text x="240" y="184" text-anchor="middle" fill="#ffd180" font-size="14">🗣</text>
+                            <text x="240" y="202" text-anchor="middle" fill="white" font-size="11" font-weight="700">Text Encoder (T5-XL)</text>
+                            <text x="240" y="218" text-anchor="middle" fill="rgba(255,255,255,0.6)" font-size="9">Prompt → 77×1024 embed</text>
+                        </g>
+
+                        <!-- ControlNet Encoder -->
+                        <g class="arch-node" style="animation-delay:0.7s">
+                            <rect x="330" y="160" width="140" height="70" rx="10" fill="url(#gRed)"/>
+                            <text x="400" y="184" text-anchor="middle" fill="#ff80ab" font-size="14">🎛</text>
+                            <text x="400" y="202" text-anchor="middle" fill="white" font-size="11" font-weight="700">ControlNet Encoder</text>
+                            <text x="400" y="218" text-anchor="middle" fill="rgba(255,255,255,0.6)" font-size="9">Mask/Edge → hint embed</text>
+                        </g>
+
+                        <!-- Material Encoder -->
+                        <g class="arch-node" style="animation-delay:0.75s">
+                            <rect x="490" y="160" width="140" height="70" rx="10" fill="url(#gGreen)"/>
+                            <text x="560" y="184" text-anchor="middle" fill="#b9f6ca" font-size="14">🏷</text>
+                            <text x="560" y="202" text-anchor="middle" fill="white" font-size="11" font-weight="700">Material Encoder</text>
+                            <text x="560" y="218" text-anchor="middle" fill="rgba(255,255,255,0.6)" font-size="9">Class embed + BRDF vec</text>
+                        </g>
+
+                        <!-- Domain Encoder -->
+                        <g class="arch-node" style="animation-delay:0.8s">
+                            <rect x="650" y="160" width="140" height="70" rx="10" fill="url(#gTeal)"/>
+                            <text x="720" y="184" text-anchor="middle" fill="#b2dfdb" font-size="14">🌐</text>
+                            <text x="720" y="202" text-anchor="middle" fill="white" font-size="11" font-weight="700">Domain Encoder</text>
+                            <text x="720" y="218" text-anchor="middle" fill="rgba(255,255,255,0.6)" font-size="9">Style latent 512-d</text>
+                        </g>
+
+                        <!-- Severity Encoder -->
+                        <g class="arch-node" style="animation-delay:0.82s">
+                            <rect x="810" y="160" width="140" height="70" rx="10" fill="url(#gPurple)"/>
+                            <text x="880" y="184" text-anchor="middle" fill="#e1bee7" font-size="14">📊</text>
+                            <text x="880" y="202" text-anchor="middle" fill="white" font-size="11" font-weight="700">Severity Encoder</text>
+                            <text x="880" y="218" text-anchor="middle" fill="rgba(255,255,255,0.6)" font-size="9">Ordinal → continuous embed</text>
+                        </g>
+
+                        <!-- ── Row 3: Core Diffusion ─────────── -->
+                        <!-- Condition Aggregator -->
+                        <g class="arch-node" style="animation-delay:0.9s">
+                            <rect x="200" y="310" width="180" height="75" rx="10" fill="url(#gDark)"/>
+                            <text x="290" y="334" text-anchor="middle" fill="#ffd740" font-size="14">⚡</text>
+                            <text x="290" y="352" text-anchor="middle" fill="white" font-size="11" font-weight="700">Condition Aggregator</text>
+                            <text x="290" y="370" text-anchor="middle" fill="rgba(255,255,255,0.6)" font-size="9">Cross-Attn Fusion · AdaLN</text>
+                        </g>
+
+                        <!-- U-Net Denoiser (central) -->
+                        <g class="arch-node" style="animation-delay:1s">
+                            <rect x="420" y="295" width="240" height="100" rx="12" fill="url(#gDark)"/>
+                            <text x="540" y="324" text-anchor="middle" fill="#ffd740" font-size="20">🧠</text>
+                            <text x="540" y="348" text-anchor="middle" fill="white" font-size="13" font-weight="800">Surface-LDM U-Net</text>
+                            <text x="540" y="366" text-anchor="middle" fill="#4fc3f7" font-size="10">ε_θ(z_t, t, c) — Denoiser</text>
+                            <text x="540" y="382" text-anchor="middle" fill="rgba(255,255,255,0.55)" font-size="9">T=1000 steps · DDPM/DDIM</text>
+                        </g>
+
+                        <!-- Domain Discriminator -->
+                        <g class="arch-node" style="animation-delay:1.1s">
+                            <rect x="700" y="310" width="180" height="75" rx="10" fill="url(#gRed)"/>
+                            <text x="790" y="334" text-anchor="middle" fill="#ff80ab" font-size="14">⚔️</text>
+                            <text x="790" y="352" text-anchor="middle" fill="white" font-size="11" font-weight="700">Domain Discriminator</text>
+                            <text x="790" y="370" text-anchor="middle" fill="rgba(255,255,255,0.6)" font-size="9">Real vs Syn · Adversarial</text>
+                        </g>
+
+                        <!-- ── Row 4: Outputs ────────────────── -->
+                        <!-- VAE Decoder -->
+                        <g class="arch-node" style="animation-delay:1.2s">
+                            <rect x="330" y="450" width="160" height="60" rx="10" fill="url(#gBlue)"/>
+                            <text x="410" y="473" text-anchor="middle" fill="#4fc3f7" font-size="13">🔭</text>
+                            <text x="410" y="491" text-anchor="middle" fill="white" font-size="11" font-weight="700">VAE Decoder</text>
+                            <text x="410" y="504" text-anchor="middle" fill="rgba(255,255,255,0.6)" font-size="9">Latent → Pixel Space</text>
+                        </g>
+
+                        <!-- Output -->
+                        <g class="arch-node" style="animation-delay:1.3s">
+                            <rect x="530" y="450" width="200" height="60" rx="10" fill="url(#gGreen)"/>
+                            <text x="630" y="473" text-anchor="middle" fill="#b9f6ca" font-size="13">✅</text>
+                            <text x="630" y="491" text-anchor="middle" fill="white" font-size="12" font-weight="700">Synthetic Wall + Mask</text>
+                            <text x="630" y="504" text-anchor="middle" fill="rgba(255,255,255,0.6)" font-size="9">RGB + pixel-wise annot.</text>
+                        </g>
+
+                        <!-- ── Arrows Row 1→2 ────────────────── -->
+                        <line x1="80" y1="80" x2="80" y2="160" stroke="#667eea" stroke-width="2" marker-end="url(#arrowhead)" stroke-dasharray="5,3">
+                            <animate attributeName="stroke-dashoffset" from="100" to="0" dur="2s" repeatCount="indefinite"/>
+                        </line>
+                        <line x1="240" y1="80" x2="240" y2="160" stroke="#f5a623" stroke-width="2" marker-end="url(#arrowO)" stroke-dasharray="5,3">
+                            <animate attributeName="stroke-dashoffset" from="100" to="0" dur="2s" repeatCount="indefinite" begin="0.2s"/>
+                        </line>
+                        <line x1="400" y1="80" x2="400" y2="160" stroke="#e94560" stroke-width="2" marker-end="url(#arrowR)" stroke-dasharray="5,3">
+                            <animate attributeName="stroke-dashoffset" from="100" to="0" dur="2s" repeatCount="indefinite" begin="0.4s"/>
+                        </line>
+                        <line x1="560" y1="80" x2="560" y2="160" stroke="#00d2a0" stroke-width="2" marker-end="url(#arrowG)" stroke-dasharray="5,3">
+                            <animate attributeName="stroke-dashoffset" from="100" to="0" dur="2s" repeatCount="indefinite" begin="0.6s"/>
+                        </line>
+                        <line x1="720" y1="80" x2="720" y2="160" stroke="#4fc3f7" stroke-width="2" marker-end="url(#arrowhead)" stroke-dasharray="5,3">
+                            <animate attributeName="stroke-dashoffset" from="100" to="0" dur="2s" repeatCount="indefinite" begin="0.8s"/>
+                        </line>
+                        <line x1="880" y1="80" x2="880" y2="160" stroke="#ce93d8" stroke-width="2" marker-end="url(#arrowhead)" stroke-dasharray="5,3">
+                            <animate attributeName="stroke-dashoffset" from="100" to="0" dur="2s" repeatCount="indefinite" begin="1s"/>
+                        </line>
+
+                        <!-- ── Arrows Encoders→Aggregator/UNet ── -->
+                        <line x1="80" y1="230" x2="250" y2="310" stroke="#667eea" stroke-width="1.5" marker-end="url(#arrowhead)" opacity="0.7"/>
+                        <line x1="240" y1="230" x2="270" y2="310" stroke="#f5a623" stroke-width="1.5" marker-end="url(#arrowO)" opacity="0.7"/>
+                        <line x1="400" y1="230" x2="310" y2="310" stroke="#e94560" stroke-width="1.5" marker-end="url(#arrowR)" opacity="0.7"/>
+                        <line x1="560" y1="230" x2="490" y2="295" stroke="#00d2a0" stroke-width="1.5" marker-end="url(#arrowG)" opacity="0.7"/>
+                        <line x1="720" y1="230" x2="750" y2="310" stroke="#4fc3f7" stroke-width="1.5" marker-end="url(#arrowhead)" opacity="0.7"/>
+                        <line x1="880" y1="230" x2="820" y2="310" stroke="#ce93d8" stroke-width="1.5" marker-end="url(#arrowhead)" opacity="0.7"/>
+
+                        <!-- Aggregator → UNet -->
+                        <line x1="380" y1="347" x2="420" y2="347" stroke="#ffd740" stroke-width="2.5" marker-end="url(#arrowO)">
+                            <animate attributeName="opacity" values="1;0.4;1" dur="1.5s" repeatCount="indefinite"/>
+                        </line>
+
+                        <!-- Domain Discriminator ← UNet -->
+                        <line x1="660" y1="347" x2="700" y2="347" stroke="#e94560" stroke-width="2.5" marker-end="url(#arrowR)">
+                            <animate attributeName="opacity" values="1;0.4;1" dur="1.5s" repeatCount="indefinite" begin="0.5s"/>
+                        </line>
+
+                        <!-- UNet → VAE Decoder -->
+                        <line x1="540" y1="395" x2="430" y2="450" stroke="#4fc3f7" stroke-width="2" marker-end="url(#arrowhead)">
+                            <animate attributeName="stroke-dasharray" values="0,200;200,0" dur="3s" repeatCount="indefinite"/>
+                        </line>
+
+                        <!-- VAE Decoder → Output -->
+                        <line x1="490" y1="480" x2="530" y2="480" stroke="#00d2a0" stroke-width="2.5" marker-end="url(#arrowG)">
+                            <animate attributeName="opacity" values="1;0.5;1" dur="2s" repeatCount="indefinite"/>
+                        </line>
+
+                        <!-- Legend -->
+                        <g transform="translate(960, 160)">
+                            <rect x="0" y="0" width="130" height="220" rx="8" fill="#f9f9f9" stroke="#e0e0e0" stroke-width="1"/>
+                            <text x="65" y="20" text-anchor="middle" fill="#333" font-size="10" font-weight="700">LEGEND</text>
+                            <line x1="10" y1="40" x2="40" y2="40" stroke="#667eea" stroke-width="2" stroke-dasharray="5,3"/>
+                            <text x="48" y="44" fill="#555" font-size="9">Image Flow</text>
+                            <line x1="10" y1="60" x2="40" y2="60" stroke="#f5a623" stroke-width="2" stroke-dasharray="5,3"/>
+                            <text x="48" y="64" fill="#555" font-size="9">Text/Cond Flow</text>
+                            <line x1="10" y1="80" x2="40" y2="80" stroke="#e94560" stroke-width="2" stroke-dasharray="5,3"/>
+                            <text x="48" y="84" fill="#555" font-size="9">Mask/Control</text>
+                            <line x1="10" y1="100" x2="40" y2="100" stroke="#00d2a0" stroke-width="2" stroke-dasharray="5,3"/>
+                            <text x="48" y="104" fill="#555" font-size="9">Material/Style</text>
+                            <line x1="10" y1="120" x2="40" y2="120" stroke="#4fc3f7" stroke-width="2" stroke-dasharray="5,3"/>
+                            <text x="48" y="124" fill="#555" font-size="9">Domain Signal</text>
+                            <text x="65" y="150" text-anchor="middle" fill="#e94560" font-size="9" font-weight="700">⚔️ ADVERSARIAL</text>
+                            <text x="65" y="164" text-anchor="middle" fill="#888" font-size="8">Discriminator</text>
+                            <text x="65" y="180" text-anchor="middle" fill="#888" font-size="8">back-propagates ∇</text>
+                            <text x="65" y="196" text-anchor="middle" fill="#888" font-size="8">through generator</text>
+                        </g>
+                    </svg>
+                </div>
+            </div>
+
+            <!-- ── U-NET DETAIL ── -->
+            <div class="arch-wrapper" style="margin-top:30px;">
+                <div class="arch-title">🧠 Surface-LDM U-Net Architecture Detail</div>
+                <div style="display:grid;grid-template-columns:1fr 80px 1fr;gap:0;max-width:860px;margin:0 auto;">
+                    <!-- Encoder side -->
+                    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:10px;">
+                        <div class="unet-label">ENCODER (Downsampling)</div>
+                        <div class="unet-block ub-enc1">
+                            ResBlock + SelfAttn<br>
+                            <small>512ch · 64×64</small>
+                        </div>
+                        <div class="unet-block ub-enc2">
+                            ResBlock + CrossAttn<br>
+                            <small>1024ch · 32×32</small>
+                        </div>
+                        <div class="unet-block ub-enc3">
+                            ResBlock + CrossAttn<br>
+                            <small>1024ch · 16×16</small>
+                        </div>
+                        <div class="unet-block ub-enc4">
+                            ResBlock + CrossAttn<br>
+                            <small>1024ch · 8×8</small>
+                        </div>
+                    </div>
+                    <!-- Middle column: skip arrows + bottleneck -->
+                    <div style="display:flex;flex-direction:column;align-items:center;justify-content:space-around;padding-top:30px;">
+                        <div style="font-size:0.8em;color:#e94560;font-weight:700;transform:rotate(0deg);writing-mode:horizontal-tb;text-align:center;letter-spacing:1px;">
+                            ← skip →<br>
+                            ↕<br>
+                            ↕<br>
+                            ← skip →
+                        </div>
+                        <div class="unet-block ub-bot" style="width:80px;text-align:center;margin:8px 0;">
+                            BOTTLENECK<br>
+                            <small style="color:#4fc3f7;">8×8 · 1024ch</small>
+                        </div>
+                        <div style="font-size:0.8em;color:#e94560;font-weight:700;text-align:center;letter-spacing:1px;">
+                            ← skip →<br>
+                            ↕<br>
+                            ↕<br>
+                            ← skip →
+                        </div>
+                    </div>
+                    <!-- Decoder side -->
+                    <div style="display:flex;flex-direction:column;align-items:flex-start;gap:10px;">
+                        <div class="unet-label">DECODER (Upsampling)</div>
+                        <div class="unet-block ub-dec1">
+                            ResBlock + SelfAttn<br>
+                            <small>512ch · 64×64</small>
+                        </div>
+                        <div class="unet-block ub-dec2">
+                            ResBlock + CrossAttn<br>
+                            <small>1024ch · 32×32</small>
+                        </div>
+                        <div class="unet-block ub-dec3">
+                            ResBlock + CrossAttn<br>
+                            <small>1024ch · 16×16</small>
+                        </div>
+                        <div class="unet-block ub-dec4">
+                            ResBlock + CrossAttn<br>
+                            <small>1024ch · 8×8</small>
+                        </div>
+                    </div>
+                </div>
+                <div style="max-width:860px;margin:20px auto 0;display:flex;gap:12px;flex-wrap:wrap;justify-content:center;">
+                    <div style="background:#e3f2fd;padding:8px 14px;border-radius:8px;font-size:0.78em;border:1px solid #1565c0;color:#0d47a1;"><strong>Cross-Attn Keys/Values</strong> come from T5 text embed + ControlNet hint</div>
+                    <div style="background:#e8f5e9;padding:8px 14px;border-radius:8px;font-size:0.78em;border:1px solid #2e7d32;color:#1b5e20;"><strong>AdaLN</strong> modulated by timestep t + material/severity embed</div>
+                    <div style="background:#fce4ec;padding:8px 14px;border-radius:8px;font-size:0.78em;border:1px solid #c62828;color:#880e4f;"><strong>Skip Connections</strong> concatenated at each decoder block resolution</div>
+                    <div style="background:#ede7f6;padding:8px 14px;border-radius:8px;font-size:0.78em;border:1px solid #6a1b9a;color:#4a148c;"><strong>ControlNet Copy</strong> adds fine-grained structural guidance from edge/mask</div>
+                </div>
+            </div>
+
+            <!-- ── CONDITIONING DIAGRAM ── -->
+            <div class="arch-wrapper" style="margin-top:30px;">
+                <div class="arch-title">⚡ Multi-Modal Conditioning Flow</div>
+                <div class="cond-diagram">
+                    <!-- Left: conditioning inputs -->
+                    <div class="cond-col">
+                        <div class="cond-item ci-text">
+                            <span style="font-size:1.3em;">📝</span>
+                            <div><strong>Text Prompt</strong><br><small>Defect type, material, location description</small></div>
+                        </div>
+                        <div class="cond-item ci-mask">
+                            <span style="font-size:1.3em;">🎭</span>
+                            <div><strong>Defect Mask</strong><br><small>Binary or semantic segmentation hint</small></div>
+                        </div>
+                        <div class="cond-item ci-mat">
+                            <span style="font-size:1.3em;">🧱</span>
+                            <div><strong>Material Class</strong><br><small>Concrete / Brick / Plaster / Tile</small></div>
+                        </div>
+                    </div>
+                    <!-- Center: U-Net -->
+                    <div class="cond-center">
+                        <span class="cond-arrow">→</span>
+                        <div class="cond-center-box">
+                            <div class="cc-icon">🧠</div>
+                            <div class="cc-title">Surface-LDM<br>U-Net</div>
+                            <div class="cc-sub">ε_θ(z_t, t, c)</div>
+                        </div>
+                        <span class="cond-arrow">→</span>
+                    </div>
+                    <!-- Right: additional conditioning -->
+                    <div class="cond-col">
+                        <div class="cond-item ci-edge">
+                            <span style="font-size:1.3em;">📐</span>
+                            <div><strong>Edge / Depth Map</strong><br><small>ControlNet structural guidance</small></div>
+                        </div>
+                        <div class="cond-item ci-depth">
+                            <span style="font-size:1.3em;">⚙️</span>
+                            <div><strong>Severity Level</strong><br><small>Ordinal 0–5 → continuous embed</small></div>
+                        </div>
+                        <div class="cond-item ci-style">
+                            <span style="font-size:1.3em;">🌐</span>
+                            <div><strong>Domain Style</strong><br><small>Camera profile / lighting style vector</small></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="info-box ib-blue" style="margin-top:20px;">
+                    <div class="ib-icon">💡</div>
+                    <div class="ib-text">
+                        <strong>Classifier-Free Guidance (CFG)</strong>
+                        During training, conditioning is randomly dropped (p=0.1) so the model learns both
+                        conditional and unconditional distributions. At inference, the guided score
+                        <em>ε̂ = ε_uncond + γ·(ε_cond − ε_uncond)</em> amplifies adherence to the
+                        conditioning signal. Scale γ ∈ [5,12] depending on fidelity vs diversity tradeoff.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ────────────────────────────────────────────
+             SECTION 4 — DEFECT SYNTHESIS
+        ──────────────────────────────────────────────── -->
+        <div class="section-block reveal">
+            <div class="section-label">Section 04</div>
+            <h2 class="section-title">Defect Synthesis — Taxonomy &amp; Approach</h2>
+            <p class="section-sub">
+                Six canonical defect classes are modelled with dedicated conditioning pathways.
+                Each class uses a class-conditioned inpainting approach where the defect region's
+                latent is re-noised to a partial timestep t* and then denoised with the target defect
+                embedded in the cross-attention context.
+            </p>
+
+            <div class="defect-grid">
+                <div class="defect-card df-crack">
+                    <div class="dc-icon">〰️</div>
+                    <div class="dc-name">Structural Crack</div>
+                    <div class="dc-tech">Thin-line diffusion · Width controlled by σ param · Hairline to 5mm via severity embedding · Auto-vectorised mask from stroke input</div>
+                </div>
+                <div class="defect-card df-effl">
+                    <div class="dc-icon">🌿</div>
+                    <div class="dc-name">Efflorescence</div>
+                    <div class="dc-tech">Reaction-diffusion texture prior · Salt-crystal distribution sampled from real SEM images · White bloom opacity 0–100%</div>
+                </div>
+                <div class="defect-card df-peel">
+                    <div class="dc-icon">🔴</div>
+                    <div class="dc-name">Paint Delamination</div>
+                    <div class="dc-tech">Laplacian peeling boundary GAN · Multi-layer paint stack (top/base/substrate) revealed progressively · Curl edge simulation</div>
+                </div>
+                <div class="defect-card df-mold">
+                    <div class="dc-icon">🟣</div>
+                    <div class="dc-name">Biological Growth</div>
+                    <div class="dc-tech">Fractal mold colony texture · Humidity &amp; moisture metadata conditioning · Green / black / grey mould variants via text token</div>
+                </div>
+                <div class="defect-card df-spall">
+                    <div class="dc-icon">🔵</div>
+                    <div class="dc-name">Surface Spalling</div>
+                    <div class="dc-tech">Voronoi fracture mask stitched into inpainting region · Depth discontinuity map as ControlNet hint · Exposed aggregate simulation</div>
+                </div>
+                <div class="defect-card df-corr">
+                    <div class="dc-icon">🟡</div>
+                    <div class="dc-name">Corrosion Staining</div>
+                    <div class="dc-tech">Iron-oxide rebar stain simulation · Gravitational drip path computed from surface normal map · Colour from real stain colour LUT</div>
+                </div>
+            </div>
+
+            <div class="info-box ib-orange" style="margin-top:10px;">
+                <div class="ib-icon">⚠️</div>
+                <div class="ib-text">
+                    <strong>Rare Defect Augmentation</strong>
+                    In real inspection datasets, severe defects (severity 4–5) account for &lt;2% of images.
+                    The diffusion model explicitly up-samples these using <em>classifier-guidance</em>
+                    towards high severity scores, enabling training set re-balancing without physical
+                    destruction testing. This directly addresses the long-tail problem in industrial AI.
+                </div>
+            </div>
+        </div>
+
+        <!-- ────────────────────────────────────────────
+             SECTION 5 — DOMAIN ADAPTATION
+        ──────────────────────────────────────────────── -->
+        <div class="section-block reveal">
+            <div class="section-label">Section 05</div>
+            <h2 class="section-title">Domain Adaptation — Closing the Sim-to-Real Gap</h2>
+            <p class="section-sub">
+                Even photorealistic diffusion outputs contain subtle distribution shifts — sensor noise
+                profiles, JPEG compression artefacts, colour response curves — that cause trained
+                detectors to fail on real cameras. Three complementary techniques are applied.
+            </p>
+
+            <div class="domain-strip">
+                <!-- Real domain -->
+                <div class="domain-col dom-real">
+                    <h4 style="color:#1b5e20;">📸 Real Domain</h4>
+                    <div class="dom-items">
+                        <div class="dom-item">🏭 Site inspection photos (DSLR / mobile)</div>
+                        <div class="dom-item">📷 ISO noise · lens distortion · perspective variation</div>
+                        <div class="dom-item">⚡ Uncontrolled lighting · shadows · flare</div>
+                        <div class="dom-item">🎨 Real surface ageing &amp; contamination</div>
+                        <div class="dom-item">📦 Sparse labels (few annotated defects)</div>
+                    </div>
+                </div>
+
+                <!-- Bridge column -->
+                <div class="domain-center-col">
+                    <div class="dom-bridge">
+                        <div class="db-icon">⚙️</div>
+                        Latent CycleGAN
+                    </div>
+                    <div class="dom-bridge" style="background:linear-gradient(135deg,#0f3460,#1565c0);">
+                        <div class="db-icon">🎯</div>
+                        Feature Align
+                    </div>
+                    <div class="dom-bridge" style="background:linear-gradient(135deg,#1b5e20,#388e3c);">
+                        <div class="db-icon">🔄</div>
+                        Style Transfer
+                    </div>
+                </div>
+
+                <!-- Synthetic domain -->
+                <div class="domain-col dom-syn">
+                    <h4 style="color:#0d47a1;">🤖 Synthetic Domain</h4>
+                    <div class="dom-items">
+                        <div class="dom-item">🧠 LDM-generated wall surfaces</div>
+                        <div class="dom-item">🔬 Perfect photometric consistency</div>
+                        <div class="dom-item">💡 Controlled, uniform virtual lighting</div>
+                        <div class="dom-item">🏗 Clean render-engine micro-textures</div>
+                        <div class="dom-item">📦 Dense pixel-perfect segmentation masks</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Three DA techniques -->
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px;margin-top:24px;">
+                <div class="info-box ib-purple" style="flex-direction:column;">
+                    <div style="display:flex;gap:12px;align-items:center;margin-bottom:8px;">
+                        <span style="font-size:1.8em;">⚙️</span>
+                        <strong style="font-size:1em;color:#4a148c;">Latent CycleGAN</strong>
+                    </div>
+                    <p style="font-size:0.85em;line-height:1.7;color:#444;">
+                        Two generators G<sub>S→R</sub> and G<sub>R→S</sub> operate in the VAE latent space
+                        (4× compressed), making cycle consistency affordable. An identity loss preserves
+                        defect morphology while transferring camera and lighting style. No paired data needed.
+                    </p>
+                </div>
+                <div class="info-box ib-green" style="flex-direction:column;">
+                    <div style="display:flex;gap:12px;align-items:center;margin-bottom:8px;">
+                        <span style="font-size:1.8em;">🎯</span>
+                        <strong style="font-size:1em;color:#1b5e20;">Domain-Adversarial Feature Alignment</strong>
+                    </div>
+                    <p style="font-size:0.85em;line-height:1.7;color:#444;">
+                        Gradient Reversal Layer (GRL) is inserted between the U-Net bottleneck and a
+                        domain classifier. By maximising domain confusion at the feature level, the
+                        encoder learns domain-invariant representations — retaining defect semantics
+                        while discarding camera artefacts.
+                    </p>
+                </div>
+                <div class="info-box ib-blue" style="flex-direction:column;">
+                    <div style="display:flex;gap:12px;align-items:center;margin-bottom:8px;">
+                        <span style="font-size:1.8em;">🔄</span>
+                        <strong style="font-size:1em;color:#0d47a1;">Differentiable Camera Augmentation</strong>
+                    </div>
+                    <p style="font-size:0.85em;line-height:1.7;color:#444;">
+                        At inference, camera response functions (CRFs) sampled from a real-world camera
+                        CRF database are applied as differentiable post-processing layers. Combined with
+                        learned noise profiles and JPEG-Q augmentation, synthetic outputs are rendered to
+                        match specific target camera models used in deployment.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ────────────────────────────────────────────
+             SECTION 6 — TRAINING STRATEGY
+        ──────────────────────────────────────────────── -->
+        <div class="section-block reveal">
+            <div class="section-label">Section 06</div>
+            <h2 class="section-title">Training Strategy</h2>
+            <p class="section-sub">
+                A staged, multi-objective training curriculum progressively integrates each module
+                to avoid training instabilities from competing losses.
+            </p>
+
+            <div class="train-timeline">
+                <div class="train-step">
+                    <div class="ts-phase">Phase 1 — Weeks 1–4</div>
+                    <div class="ts-title">🏗 Pre-train Surface VAE</div>
+                    <div class="ts-desc">
+                        Train a KL-regularised VAE on a large-scale wall texture dataset (500K+ patches,
+                        512×512px). Objective: reconstruction + KL divergence. Learn a compact 4-channel
+                        latent space that captures material microstructure, illumination gradients, and
+                        surface topology. Evaluate with FID and LPIPS on held-out real wall patches.
+                    </div>
+                </div>
+                <div class="train-step">
+                    <div class="ts-phase">Phase 2 — Weeks 5–10</div>
+                    <div class="ts-title">🧠 Pre-train LDM U-Net (Unconditional)</div>
+                    <div class="ts-desc">
+                        Pre-train the denoising U-Net on VAE latents with DDPM loss only (no conditioning).
+                        This bootstraps the denoiser's understanding of valid wall-surface latent manifolds
+                        before fine-grained conditioning is introduced. Scheduler: cosine noise schedule,
+                        T=1000. Warm up with low-res 64×64 latents, then scale to full resolution.
+                    </div>
+                </div>
+                <div class="train-step">
+                    <div class="ts-phase">Phase 3 — Weeks 11–18</div>
+                    <div class="ts-title">⚡ Fine-tune with Full Multi-Modal Conditioning</div>
+                    <div class="ts-desc">
+                        Introduce text conditioning (CFG dropout p=0.1), ControlNet branch (mask/edge),
+                        material and severity embeddings simultaneously. Frozen text encoder (T5-XL).
+                        Joint loss: L<sub>diffusion</sub> + λ<sub>perceptual</sub>·L<sub>LPIPS</sub> +
+                        λ<sub>mask</sub>·L<sub>mask-align</sub>. Gradient accumulation over 4 GPUs.
+                    </div>
+                </div>
+                <div class="train-step">
+                    <div class="ts-phase">Phase 4 — Weeks 19–24</div>
+                    <div class="ts-title">🔄 Domain Adaptation Fine-tuning</div>
+                    <div class="ts-desc">
+                        Add Latent CycleGAN and GRL adversarial objectives with conservative λ<sub>adv</sub>=0.1
+                        (ramped up over 3 epochs to avoid mode collapse). Camera augmentation applied
+                        online. Evaluate with Fréchet Inception Distance (FID) between synthetic outputs
+                        and real inspection image sets from 3 target camera deployments.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Loss formulation -->
+            <div class="info-box ib-blue" style="margin-top:10px;">
+                <div class="ib-icon">📐</div>
+                <div class="ib-text">
+                    <strong>Full Training Objective</strong><br>
+                    <code style="display:block;background:#e3f2fd;padding:12px;border-radius:6px;margin-top:8px;font-size:0.92em;line-height:2;">
+                        𝓛<sub>total</sub> = 𝓛<sub>LDM</sub>
+                        &nbsp;+ λ₁·𝓛<sub>LPIPS</sub>
+                        &nbsp;+ λ₂·𝓛<sub>mask</sub>
+                        &nbsp;+ λ₃·𝓛<sub>cycle</sub>
+                        &nbsp;+ λ₄·𝓛<sub>adv-domain</sub>
+                        &nbsp;+ λ₅·𝓛<sub>severity-ranking</sub>
+                        <br>
+                        where λ = {0.5, 0.2, 0.05, 0.1, 0.15}
+                    </code>
+                </div>
+            </div>
+        </div>
+
+        <!-- ────────────────────────────────────────────
+             SECTION 7 — EVALUATION METRICS
+        ──────────────────────────────────────────────── -->
+        <div class="section-block reveal">
+            <div class="section-label">Section 07</div>
+            <h2 class="section-title">Evaluation Metrics &amp; Benchmarks</h2>
+            <p class="section-sub">
+                Quality is evaluated across four axes: perceptual realism, defect fidelity,
+                domain alignment, and downstream detector performance.
+            </p>
+
+            <div class="metrics-grid">
+                <div class="metric-card mc-1">
+                    <div class="m-val">FID</div>
+                    <div class="m-name">Fréchet Inception Distance</div>
+                    <div class="m-desc">Perceptual distribution match vs real wall images. Target &lt;15</div>
+                </div>
+                <div class="metric-card mc-2">
+                    <div class="m-val">LPIPS</div>
+                    <div class="m-name">Perceptual Similarity</div>
+                    <div class="m-desc">VGG-based patch similarity. Target &lt;0.12 on texture patches</div>
+                </div>
+                <div class="metric-card mc-3">
+                    <div class="m-val">mIoU</div>
+                    <div class="m-name">Defect Mask Accuracy</div>
+                    <div class="m-desc">Generated defect pixels vs reference mask. Target &gt;0.78</div>
+                </div>
+                <div class="metric-card mc-4">
+                    <div class="m-val">SSIM</div>
+                    <div class="m-name">Structural Similarity</div>
+                    <div class="m-desc">Structure preservation outside defect region. Target &gt;0.85</div>
+                </div>
+                <div class="metric-card mc-5">
+                    <div class="m-val">mAP</div>
+                    <div class="m-name">Detector Transfer mAP</div>
+                    <div class="m-desc">YOLOv8 trained on synth, tested on real. Target mAP@50 &gt;0.72</div>
+                </div>
+                <div class="metric-card mc-6">
+                    <div class="m-val">A-dist</div>
+                    <div class="m-name">Domain Discrepancy</div>
+                    <div class="m-desc">Proxy A-distance between sim/real feature distributions</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ────────────────────────────────────────────
+             SECTION 8 — APPLICATIONS & RESULTS
+        ──────────────────────────────────────────────── -->
+        <div class="section-block reveal">
+            <div class="section-label">Section 08</div>
+            <h2 class="section-title">Applications &amp; Expected Impact</h2>
+            <p class="section-sub">
+                The proposed pipeline enables a new paradigm for inspection AI development — one where
+                data generation cost is decoupled from physical defect occurrence.
+            </p>
+
+            <div class="result-grid">
+                <div class="result-card">
+                    <div class="rc-header">
+                        <div class="rc-icon">🏗</div>
+                        <div class="rc-title">Civil Infrastructure Inspection</div>
+                    </div>
+                    <div class="rc-body">
+                        Drone-based bridge, tunnel, and building façade inspection systems can be trained
+                        with synthetic defect datasets generated by this pipeline — eliminating the need
+                        to wait for real defects to appear before building detection models.
+                    </div>
+                    <span class="rc-tag rt-1">Bridge Safety</span>
+                    <span class="rc-tag rt-2">Drone Inspection</span>
+                </div>
+                <div class="result-card">
+                    <div class="rc-header">
+                        <div class="rc-icon">🏭</div>
+                        <div class="rc-title">Manufacturing QA</div>
+                    </div>
+                    <div class="rc-body">
+                        Pre-cast concrete panel manufacturers can validate coating quality using models
+                        trained on synthetic spalling and delamination data, enabling end-of-line
+                        visual inspection without expensive manual labelling.
+                    </div>
+                    <span class="rc-tag rt-3">Quality Control</span>
+                    <span class="rc-tag rt-4">Zero-Label Deploy</span>
+                </div>
+                <div class="result-card">
+                    <div class="rc-header">
+                        <div class="rc-icon">🏠</div>
+                        <div class="rc-title">Property Condition Assessment</div>
+                    </div>
+                    <div class="rc-body">
+                        Real-estate and insurance platforms can leverage the pipeline to automatically
+                        assess and categorise property damage from smartphone photos, with models
+                        robust to the wide variety of consumer camera profiles.
+                    </div>
+                    <span class="rc-tag rt-1">PropTech</span>
+                    <span class="rc-tag rt-2">Insurance AI</span>
+                </div>
+                <div class="result-card">
+                    <div class="rc-header">
+                        <div class="rc-icon">🔬</div>
+                        <div class="rc-title">Materials Research</div>
+                    </div>
+                    <div class="rc-body">
+                        Accelerate materials science R&amp;D by generating photorealistic simulations of
+                        how novel coatings or admixtures would appear over time — enabling controlled
+                        virtual ageing studies without decade-long physical trials.
+                    </div>
+                    <span class="rc-tag rt-3">Research</span>
+                    <span class="rc-tag rt-4">Digital Twin</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ────────────────────────────────────────────
+             SECTION 9 — TECH STACK
+        ──────────────────────────────────────────────── -->
+        <div class="section-block reveal">
+            <div class="section-label">Section 09</div>
+            <h2 class="section-title">Technology Stack</h2>
+            <p class="section-sub">Reference implementation stack for rapid prototyping and production deployment.</p>
+            <div class="tech-badges">
+                <span class="tech-badge tb-blue">PyTorch 2.3</span>
+                <span class="tech-badge tb-purple">Diffusers 0.27</span>
+                <span class="tech-badge tb-green">HuggingFace Hub</span>
+                <span class="tech-badge tb-red">ControlNet v1.1</span>
+                <span class="tech-badge tb-orange">Stable Diffusion XL</span>
+                <span class="tech-badge tb-dark">DDPM / DDIM</span>
+                <span class="tech-badge tb-blue">T5-XL Text Encoder</span>
+                <span class="tech-badge tb-purple">CLIP ViT-L/14</span>
+                <span class="tech-badge tb-green">timm (ResNet-50)</span>
+                <span class="tech-badge tb-red">Kornia (augment)</span>
+                <span class="tech-badge tb-orange">Albumentations</span>
+                <span class="tech-badge tb-dark">Weights &amp; Biases</span>
+                <span class="tech-badge tb-blue">torchmetrics</span>
+                <span class="tech-badge tb-purple">clean-fid</span>
+                <span class="tech-badge tb-green">Flash Attention 2</span>
+                <span class="tech-badge tb-red">DeepSpeed ZeRO-3</span>
+                <span class="tech-badge tb-orange">TorchDynamo / compile</span>
+                <span class="tech-badge tb-dark">ONNX / TensorRT</span>
+            </div>
+        </div>
+
+    </div><!-- end .content -->
+
+    <!-- ═══════════════════ FOOTER ════════════════════ -->
+    <footer>
+        <p><strong>🤖 BABABOSS GenAI Research</strong> | Diffusion-Based Photorealistic Wall-Surface Simulation</p>
+        <p style="margin-top:8px;opacity:0.7;">
+            Research Track: Generative AI for Industrial Inspection &amp; Domain Adaptation · April 2026
+        </p>
+        <div class="footer-links">
+            <a href="diffusion.html">← Understanding Stable Diffusion</a>
+            <a href="ltxcore.html">LTX-Core Pipeline →</a>
+            <a href="bgh.html">BGH Architecture →</a>
+        </div>
+        <p style="margin-top:14px;opacity:0.5;font-size:0.8em;">
+            Built for comprehensive understanding of diffusion-model research for visual inspection applications.
+        </p>
+    </footer>
+
+</div><!-- end .container -->
+
+<script>
+    // ── Scroll reveal ─────────────────────────────────────────────
+    const revealEls = document.querySelectorAll('.reveal');
+    const observer  = new IntersectionObserver((entries) => {
+        entries.forEach(e => {
+            if (e.isIntersecting) {
+                e.target.classList.add('visible');
+                observer.unobserve(e.target);
+            }
+        });
+    }, { threshold: 0.08 });
+    revealEls.forEach(el => observer.observe(el));
+
+    // ── Animated diffusion noise strips ─────────────────────────
+    // Cycle through wall-texture colour stops to simulate noising
+    const ns0 = document.querySelectorAll('.ns0');
+    const ns1 = document.querySelectorAll('.ns1');
+    const ns2 = document.querySelectorAll('.ns2');
+    const ns3 = document.querySelectorAll('.ns3');
+    const ns4 = document.querySelectorAll('.ns4');
+
+    // Add subtle shimmer to all noise steps
+    document.querySelectorAll('.noise-step').forEach((el, i) => {
+        el.style.transition = 'filter 0.5s ease';
+        setInterval(() => {
+            el.style.filter = `blur(${(Math.random() * 0.5 * i).toFixed(1)}px) brightness(${0.9 + Math.random() * 0.2})`;
+        }, 1200 + i * 300);
+    });
+
+    // ── Flow animation on hovered pipeline box ─────────────────
+    document.querySelectorAll('.pipe-box').forEach(box => {
+        box.addEventListener('mouseenter', () => box.style.outline = '3px solid #f5a623');
+        box.addEventListener('mouseleave', () => box.style.outline = 'none');
+    });
+
+    // ── Animated SVG path staggering ─────────────────────────────
+    document.querySelectorAll('.arch-path').forEach((path, i) => {
+        path.style.animationDelay = `${i * 0.15}s`;
+    });
+
+    // ── Metric value count-up animation ──────────────────────────
+    const metricCards = document.querySelectorAll('.metric-card');
+    const metricObs   = new IntersectionObserver((entries) => {
+        entries.forEach(e => {
+            if (e.isIntersecting) {
+                e.target.style.animation = 'fadeInScale 0.4s ease-out both';
+                metricObs.unobserve(e.target);
+            }
+        });
+    }, { threshold: 0.3 });
+    metricCards.forEach(c => metricObs.observe(c));
+
+    // ── Defect card stagger on scroll ────────────────────────────
+    const defectObs = new IntersectionObserver((entries) => {
+        entries.forEach(e => {
+            if (e.isIntersecting) {
+                const cards = e.target.querySelectorAll('.defect-card');
+                cards.forEach((c, i) => {
+                    c.style.opacity = '0';
+                    c.style.transform = 'translateY(20px)';
+                    setTimeout(() => {
+                        c.style.transition = 'all 0.5s ease';
+                        c.style.opacity    = '1';
+                        c.style.transform  = 'translateY(0)';
+                    }, i * 100);
+                });
+                defectObs.unobserve(e.target);
+            }
+        });
+    }, { threshold: 0.1 });
+    document.querySelectorAll('.defect-grid').forEach(g => defectObs.observe(g));
+</script>
+
+</body>
+</html>
