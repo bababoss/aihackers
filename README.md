@@ -11,5 +11,6 @@ Explore our comprehensive guides for AI video generation and advanced techniques
 - 🚀 **[LTX-2 Pipelines Guide](https://bababoss.github.io/aihackers/docs/ltxpipelines.html)** - Production-ready pipelines with guidance systems, flow diagrams, and optimization techniques
 - 📈 **[BLR Growth Hackers Meetup](https://bababoss.github.io/aihackers/docs/bgh.html)** - Community for entrepreneurs & business growth leaders - Marketing, Sales, and Entrepreneurship Growth
 - 🧱 **[GenAI Photorealistic Wall-Surface Simulation](https://bababoss.github.io/aihackers/docs/genAIPhtotrealisticWallSurface.html)** - Research & innovation in diffusion-based generative models for photorealistic wall-surface simulation, defect synthesis, and domain adaptation
+- 🎛 **[ControlNet: Turning Diffusion into a Controllable Simulation Engine](https://bababoss.github.io/aihackers/docs/ControlNet_turns_diffusion_into_controllabl.html)** - Visual animated guide to ControlNet architecture, zero-convolution mechanics, defect synthesis pipeline, training strategy, and HuggingFace Diffusers integration
 
 ---

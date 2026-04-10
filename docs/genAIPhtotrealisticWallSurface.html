@@ -60,6 +60,110 @@
             100% { background-position: 60px 60px; }
         }
 
+        /* ── BABABOSS LOGO ─────────────────────────── */
+        .logo-wrap {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 14px;
+            margin-bottom: 22px;
+        }
+
+        .logo-bot {
+            font-size: 3em;
+            display: inline-block;
+            animation: botSpin 4s ease-in-out infinite;
+            filter: drop-shadow(0 0 12px rgba(245,166,35,0.7));
+            transform-origin: center;
+        }
+
+        @keyframes botSpin {
+            0%   { transform: rotate(-6deg) scale(1);   filter: drop-shadow(0 0 8px rgba(245,166,35,0.5)); }
+            25%  { transform: rotate(6deg)  scale(1.12); filter: drop-shadow(0 0 20px rgba(245,166,35,1)); }
+            50%  { transform: rotate(-4deg) scale(1.06); filter: drop-shadow(0 0 14px rgba(79,195,247,0.8)); }
+            75%  { transform: rotate(4deg)  scale(1.1);  filter: drop-shadow(0 0 20px rgba(233,69,96,0.9)); }
+            100% { transform: rotate(-6deg) scale(1);   filter: drop-shadow(0 0 8px rgba(245,166,35,0.5)); }
+        }
+
+        .logo-text {
+            font-size: 2.4em;
+            font-weight: 900;
+            letter-spacing: 3px;
+            background: linear-gradient(90deg, #FFD700 0%, #FFA500 30%, #e94560 60%, #4fc3f7 100%);
+            background-size: 300% auto;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: logoShine 3s linear infinite;
+        }
+
+        @keyframes logoShine {
+            0%   { background-position: 0% center; }
+            100% { background-position: 300% center; }
+        }
+
+        .logo-tagline {
+            font-size: 0.68em;
+            letter-spacing: 2px;
+            opacity: 0.6;
+            text-transform: uppercase;
+            color: white;
+            margin-top: -10px;
+            text-align: center;
+        }
+
+        /* ── BABABOSS LOGO ────────────────────────────── */
+        .logo-wrap {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 14px;
+            margin-bottom: 24px;
+        }
+
+        .logo-bot {
+            font-size: 3.2em;
+            display: inline-block;
+            animation: botSpin 4s ease-in-out infinite;
+            filter: drop-shadow(0 0 12px rgba(245,166,35,0.7));
+        }
+
+        @keyframes botSpin {
+            0%   { transform: rotate(-6deg) scale(1);    filter: drop-shadow(0 0 8px  rgba(245,166,35,0.5)); }
+            25%  { transform: rotate(6deg)  scale(1.14); filter: drop-shadow(0 0 22px rgba(245,166,35,1));   }
+            50%  { transform: rotate(-4deg) scale(1.07); filter: drop-shadow(0 0 16px rgba(79,195,247,0.9)); }
+            75%  { transform: rotate(4deg)  scale(1.12); filter: drop-shadow(0 0 22px rgba(233,69,96,0.9)); }
+            100% { transform: rotate(-6deg) scale(1);    filter: drop-shadow(0 0 8px  rgba(245,166,35,0.5)); }
+        }
+
+        .logo-text {
+            font-size: 2.5em;
+            font-weight: 900;
+            letter-spacing: 3px;
+            background: linear-gradient(90deg, #FFD700 0%, #FFA500 25%, #e94560 55%, #4fc3f7 85%, #FFD700 100%);
+            background-size: 300% auto;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: logoShine 3s linear infinite;
+            line-height: 1.1;
+        }
+
+        @keyframes logoShine {
+            0%   { background-position: 0%   center; }
+            100% { background-position: 300% center; }
+        }
+
+        .logo-tagline {
+            font-size: 0.65em;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            color: rgba(255,255,255,0.55);
+            margin-top: 2px;
+            text-align: center;
+        }
+
+        /* ── HEADER BADGE ────────────────────────────── */
         .header-badge {
             display: inline-block;
             background: rgba(229,69,96,0.25);
@@ -824,6 +928,14 @@
 
     <!-- ═══════════════════ HEADER ════════════════════ -->
     <header>
+        <!-- Animated BABABOSS Logo -->
+        <div class="logo-wrap">
+            <span class="logo-bot">🤖</span>
+            <div>
+                <div class="logo-text">BABABOSS</div>
+                <div class="logo-tagline">GenAI Research Lab</div>
+            </div>
+        </div>
         <div class="header-badge">GenAI Research · Vision AI · April 2026</div>
         <h1>Diffusion-Based <span>Photorealistic Wall-Surface</span><br>Simulation & Defect Synthesis</h1>
         <p style="opacity:0.8;margin-top:12px;font-size:1em;">Research &amp; Innovation in Generative AI for Domain Adaptation in Industrial Inspection</p>
