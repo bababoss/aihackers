@@ -1,0 +1,1938 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diffusion + ControlNet + LoRA: End-to-End Training Pipeline | BABABOSS</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --primary:  #1a1a2e;
+            --accent1:  #e94560;
+            --accent2:  #0f3460;
+            --accent3:  #533483;
+            --gold:     #f5a623;
+            --green:    #00d2a0;
+            --blue-lt:  #4fc3f7;
+            --cyan:     #00bcd4;
+            --teal:     #00897b;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        /* ── HEADER ───────────────────────────────────── */
+        header {
+            background: linear-gradient(135deg, #1a1a2e 0%, #0f3460 50%, #533483 100%);
+            color: white;
+            padding: 50px 20px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        header::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none'%3E%3Cg fill='%23ffffff' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+            animation: bgMove 20s linear infinite;
+        }
+        @keyframes bgMove { 0% { background-position: 0 0; } 100% { background-position: 60px 60px; } }
+
+        /* ── BABABOSS LOGO ────────────────────────────── */
+        .logo-wrap { display:flex; align-items:center; justify-content:center; gap:14px; margin-bottom:24px; position:relative; }
+        .logo-bot  { font-size:3.2em; display:inline-block; animation:botSpin 4s ease-in-out infinite; }
+        @keyframes botSpin {
+            0%   { transform:rotate(-6deg) scale(1);    filter:drop-shadow(0 0 8px  rgba(245,166,35,0.5)); }
+            25%  { transform:rotate(6deg)  scale(1.14); filter:drop-shadow(0 0 22px rgba(245,166,35,1));   }
+            50%  { transform:rotate(-4deg) scale(1.07); filter:drop-shadow(0 0 16px rgba(79,195,247,0.9)); }
+            75%  { transform:rotate(4deg)  scale(1.12); filter:drop-shadow(0 0 22px rgba(233,69,96,0.9));  }
+            100% { transform:rotate(-6deg) scale(1);    filter:drop-shadow(0 0 8px  rgba(245,166,35,0.5)); }
+        }
+        .logo-text {
+            font-size:2.5em; font-weight:900; letter-spacing:3px;
+            background: linear-gradient(90deg,#FFD700 0%,#FFA500 25%,#e94560 55%,#4fc3f7 85%,#FFD700 100%);
+            background-size:300% auto;
+            -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+            animation:logoShine 3s linear infinite; line-height:1.1;
+        }
+        @keyframes logoShine { 0% { background-position:0% center; } 100% { background-position:300% center; } }
+        .logo-tagline { font-size:0.65em; letter-spacing:3px; text-transform:uppercase; color:rgba(255,255,255,0.55); margin-top:2px; text-align:center; }
+
+        .header-badge { display:inline-block; background:rgba(229,69,96,0.25); border:1px solid #e94560; color:#e94560; padding:4px 14px; border-radius:20px; font-size:0.78em; font-weight:700; letter-spacing:1px; margin-bottom:16px; }
+        header h1 { font-size:2em; font-weight:900; letter-spacing:1px; line-height:1.25; margin-bottom:14px; position:relative; }
+        header p  { font-size:1em; color:rgba(255,255,255,0.7); max-width:780px; margin:0 auto; position:relative; line-height:1.7; }
+
+        /* ── CONTENT WRAPPER ──────────────────────────── */
+        .content { padding: 48px 56px; }
+
+        /* ── SECTION BLOCKS ───────────────────────────── */
+        .section-block { margin-bottom: 60px; }
+        .section-label { font-size:0.7em; font-weight:800; letter-spacing:4px; text-transform:uppercase; color:#e94560; margin-bottom:8px; }
+        .section-title { font-size:1.75em; font-weight:900; color:#1a1a2e; margin-bottom:10px; }
+        .section-sub   { font-size:0.95em; color:#666; line-height:1.75; max-width:900px; margin-bottom:28px; }
+
+        /* ── CANVAS WRAPPER ───────────────────────────── */
+        .canvas-wrap {
+            background: #0d0d1a;
+            border-radius: 12px;
+            padding: 16px;
+            margin: 20px 0;
+            overflow: hidden;
+            border: 1px solid rgba(102,126,234,0.3);
+            box-shadow: 0 4px 24px rgba(0,0,0,0.25);
+        }
+        .canvas-wrap canvas { display:block; margin:0 auto; max-width:100%; }
+        .canvas-title {
+            color: #4fc3f7;
+            font-size: 0.82em;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        /* ── FEATURE CARDS ────────────────────────────── */
+        .card-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:18px; margin:24px 0; }
+        .feat-card {
+            background: #f8f9ff;
+            border-radius: 12px;
+            padding: 22px 18px;
+            border-top: 4px solid #667eea;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .feat-card:hover { transform:translateY(-4px); box-shadow:0 8px 28px rgba(102,126,234,0.18); }
+        .feat-card .fc-icon { font-size:1.9em; margin-bottom:8px; }
+        .feat-card .fc-title { font-weight:800; font-size:0.95em; color:#1a1a2e; margin-bottom:6px; }
+        .feat-card .fc-body  { font-size:0.8em; color:#666; line-height:1.65; }
+
+        /* ── EQUATION BOX ─────────────────────────────── */
+        .eq-box {
+            background: #1a1a2e;
+            border-left: 4px solid #f5a623;
+            border-radius: 8px;
+            padding: 18px 22px;
+            font-family: 'Courier New', monospace;
+            color: #e0e0e0;
+            font-size: 0.92em;
+            margin: 18px 0;
+            line-height: 1.9;
+            overflow-x: auto;
+        }
+        .eq-box .eq-label { color:#f5a623; font-weight:700; font-size:0.8em; letter-spacing:2px; text-transform:uppercase; margin-bottom:8px; }
+        .eq-box sub, .eq-box sup { font-size:0.75em; }
+
+        /* ── COMPARISON TABLE ─────────────────────────── */
+        .cmp-table { width:100%; border-collapse:collapse; margin:20px 0; font-size:0.86em; border-radius:10px; overflow:hidden; box-shadow:0 2px 12px rgba(0,0,0,0.08); }
+        .cmp-table thead tr { background:linear-gradient(135deg,#1a1a2e,#533483); color:white; }
+        .cmp-table th { padding:12px 16px; text-align:left; font-weight:700; letter-spacing:0.5px; }
+        .cmp-table tbody tr:nth-child(odd)  { background:#f8f9ff; }
+        .cmp-table tbody tr:nth-child(even) { background:#eef0ff; }
+        .cmp-table tbody tr:hover { background:#e8ecff; }
+        .cmp-table td { padding:10px 16px; border-bottom:1px solid #e0e4f0; }
+        .cmp-table code { background:#1a1a2e; color:#4fc3f7; padding:1px 6px; border-radius:4px; font-size:0.88em; }
+
+        /* ── CODE BLOCK ───────────────────────────────── */
+        .code-block { background:#0d1117; border-radius:12px; overflow:hidden; margin:24px 0; box-shadow:0 4px 20px rgba(0,0,0,0.2); }
+        .code-label { background:#161b22; color:#4fc3f7; font-size:0.78em; font-weight:700; letter-spacing:2px; text-transform:uppercase; padding:10px 18px; border-bottom:1px solid #30363d; }
+        .code-block pre { padding:20px 22px; overflow-x:auto; font-family:'Courier New',monospace; font-size:0.82em; line-height:1.75; color:#c9d1d9; }
+        .kw  { color:#ff7b72; }
+        .cm  { color:#8b949e; font-style:italic; }
+        .st  { color:#a5d6ff; }
+        .nm  { color:#79c0ff; }
+        .fn  { color:#d2a8ff; }
+        .dec { color:#ffa657; }
+
+        /* ── TIMELINE ─────────────────────────────────── */
+        .timeline { position:relative; padding-left:36px; }
+        .timeline::before { content:''; position:absolute; left:14px; top:0; bottom:0; width:2px; background:linear-gradient(to bottom,#667eea,#e94560,#f5a623,#00d2a0); }
+        .tl-item  { position:relative; margin-bottom:36px; }
+        .tl-dot   { position:absolute; left:-29px; top:4px; width:16px; height:16px; border-radius:50%; background:#667eea; border:3px solid white; box-shadow:0 0 0 3px #667eea; }
+        .tl-content { background:#f8f9ff; border-radius:10px; padding:18px 20px; border-left:3px solid #667eea; }
+        .tl-title { font-weight:800; font-size:0.97em; color:#1a1a2e; margin-bottom:8px; }
+        .tl-content p { font-size:0.85em; color:#555; line-height:1.7; }
+
+        /* ── BADGE ROW ────────────────────────────────── */
+        .badge-row { display:flex; flex-wrap:wrap; gap:10px; margin:20px 0; }
+        .badge { display:inline-flex; align-items:center; gap:6px; padding:6px 14px; border-radius:20px; color:white; font-size:0.8em; font-weight:700; letter-spacing:0.5px; }
+
+        /* ── METRICS GRID ─────────────────────────────── */
+        .metrics-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:16px; margin:20px 0; }
+        .metric-card  { background:#f8f9ff; border-radius:10px; padding:18px; text-align:center; border-top:3px solid #667eea; }
+
+        /* ── FOOTER ───────────────────────────────────── */
+        .site-footer { background:linear-gradient(135deg,#1a1a2e,#0f3460,#533483); color:white; padding:40px 20px; text-align:center; }
+        .footer-inner { max-width:900px; margin:0 auto; }
+        .footer-logo  { display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:10px; }
+        .footer-brand  { font-size:1.5em; font-weight:900; letter-spacing:3px; color:#f5a623; }
+        .footer-tagline{ font-size:0.82em; color:rgba(255,255,255,0.55); margin-bottom:18px; }
+        .footer-nav    { display:flex; flex-wrap:wrap; justify-content:center; gap:18px; margin-bottom:18px; }
+        .footer-nav a  { color:#4fc3f7; text-decoration:none; font-size:0.82em; }
+        .footer-nav a:hover { color:#f5a623; }
+        .footer-copy   { font-size:0.75em; color:rgba(255,255,255,0.4); }
+
+        /* ── PARAM CARDS ──────────────────────────────── */
+        .param-cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:14px; margin:16px 0; }
+        .param-card  { background:#1e1e3f; border-radius:10px; padding:16px; }
+        .param-card .pc-name  { color:#4fc3f7; font-weight:800; font-size:0.82em; margin-bottom:6px; letter-spacing:1px; }
+        .param-card .pc-val   { color:#f5a623; font-weight:700; font-size:1.2em; margin-bottom:4px; }
+        .param-card .pc-desc  { color:#aaa; font-size:0.76em; line-height:1.6; }
+
+        /* ── PIPE FLOW ────────────────────────────────── */
+        .pipe-flow { display:flex; align-items:center; flex-wrap:wrap; gap:0; margin:16px 0; }
+        .pipe-box   { padding:14px 12px; border-radius:10px; text-align:center; min-width:100px; }
+        .pipe-box .pb-icon  { font-size:1.3em; margin-bottom:4px; }
+        .pipe-box .pb-title { font-weight:800; font-size:0.82em; color:white; }
+        .pipe-box .pb-sub   { font-size:0.7em; color:rgba(255,255,255,0.6); margin-top:2px; }
+        .pb-blue   { background:linear-gradient(135deg,#0d47a1,#1565c0); }
+        .pb-purple { background:linear-gradient(135deg,#4a148c,#7b1fa2); }
+        .pb-green  { background:linear-gradient(135deg,#1b5e20,#2e7d32); }
+        .pb-orange { background:linear-gradient(135deg,#bf360c,#e65100); }
+        .pb-dark   { background:linear-gradient(135deg,#1a1a2e,#533483); }
+        .pb-teal   { background:linear-gradient(135deg,#004d40,#00897b); }
+        .pb-red    { background:linear-gradient(135deg,#880e4f,#e94560); }
+        .pipe-arrow { width:32px; height:3px; background:linear-gradient(90deg,#667eea,#4fc3f7); position:relative; flex-shrink:0; }
+        .pipe-arrow::after { content:'▶'; position:absolute; right:-6px; top:-7px; color:#4fc3f7; font-size:11px; }
+        @keyframes arrowPulse { 0%,100% { opacity:1; } 50% { opacity:0.3; } }
+        .pipe-arrow.anim { animation: arrowPulse 1.6s ease-in-out infinite; }
+
+        /* ── DATASET SAMPLE GRID ──────────────────────── */
+        .ds-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:10px; margin:20px 0; }
+        .ds-cell { background:#1a1a2e; border-radius:8px; overflow:hidden; }
+        .ds-cell canvas { display:block; width:100% !important; height:auto !important; }
+        .ds-label { text-align:center; font-size:0.72em; font-weight:700; color:#4fc3f7; padding:6px 4px; letter-spacing:1px; text-transform:uppercase; background:#0d0d1a; }
+
+        /* ── HIGHLIGHT BOX ────────────────────────────── */
+        .highlight-box {
+            background: linear-gradient(135deg, #1a1a2e, #0f3460);
+            border: 1px solid rgba(79,195,247,0.3);
+            border-radius: 12px;
+            padding: 22px 26px;
+            margin: 20px 0;
+            color: #e0e0e0;
+            font-size: 0.88em;
+            line-height: 1.8;
+        }
+        .highlight-box strong { color: #f5a623; }
+        .highlight-box code   { background:rgba(255,255,255,0.08); color:#4fc3f7; padding:1px 6px; border-radius:4px; font-size:0.9em; }
+    </style>
+</head>
+<body>
+<div class="container">
+
+<!-- ═══════════════════════════════════════════════════════════════
+     HEADER
+═══════════════════════════════════════════════════════════════ -->
+<header>
+    <div class="logo-wrap">
+        <span class="logo-bot">🤖</span>
+        <div>
+            <div class="logo-text">BABABOSS</div>
+            <div class="logo-tagline">AI Systems · Visual Intelligence · Generative Research</div>
+        </div>
+    </div>
+    <div class="header-badge">Deep Learning · Generative AI · Industrial Vision</div>
+    <h1>Diffusion + ControlNet + LoRA<br>End-to-End Training Pipeline</h1>
+    <p>A fully visual, animated walkthrough of PEFT–LoRA mechanics, combined architecture,
+       construction dataset design, and the complete training pipeline for
+       wall-surface simulation, defect synthesis, and domain adaptation.</p>
+</header>
+
+<div class="content">
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SECTION 1 — WHAT IS PEFT & LoRA
+═══════════════════════════════════════════════════════════════ -->
+<div class="section-block">
+    <div class="section-label">Section 01</div>
+    <h2 class="section-title">What is PEFT &amp; LoRA?</h2>
+    <p class="section-sub">
+        <strong>Parameter-Efficient Fine-Tuning (PEFT)</strong> is a family of techniques that adapt large
+        pre-trained models to new tasks by updating only a tiny fraction of their parameters — keeping
+        the rest frozen. <strong>LoRA (Low-Rank Adaptation)</strong> is the dominant PEFT method for
+        diffusion models: instead of updating the full weight matrix W, it learns a low-rank factorization
+        ΔW = B·A whose rank r ≪ d makes it 10–1000× cheaper to train than full fine-tuning.
+    </p>
+
+    <div class="card-grid">
+        <div class="feat-card" style="border-top-color:#e94560;">
+            <div class="fc-icon">🧊</div>
+            <div class="fc-title">Frozen Backbone</div>
+            <div class="fc-body">The pre-trained model (SD 1.5, SDXL, DiT) never receives gradient updates — all its learned priors are preserved exactly.</div>
+        </div>
+        <div class="feat-card" style="border-top-color:#f5a623;">
+            <div class="fc-icon">🧮</div>
+            <div class="fc-title">Low-Rank Matrices</div>
+            <div class="fc-body">Two small matrices B ∈ ℝ<sup>d×r</sup> and A ∈ ℝ<sup>r×k</sup> replace the full ΔW ∈ ℝ<sup>d×k</sup>. With r=4, params drop from d·k to (d+k)·r.</div>
+        </div>
+        <div class="feat-card" style="border-top-color:#00d2a0;">
+            <div class="fc-icon">⚡</div>
+            <div class="fc-title">Minimal VRAM</div>
+            <div class="fc-body">LoRA adapters for a full SD U-Net weigh ~3–80 MB vs 4 GB for the full model. Fine-tune on a single consumer GPU (8–16 GB).</div>
+        </div>
+        <div class="feat-card" style="border-top-color:#4fc3f7;">
+            <div class="fc-icon">🔀</div>
+            <div class="fc-title">Merges at Inference</div>
+            <div class="fc-body">At inference time, ΔW = B·A is merged back into W′ = W + α·ΔW — zero extra latency compared to the base model.</div>
+        </div>
+        <div class="feat-card" style="border-top-color:#9c27b0;">
+            <div class="fc-icon">🏗</div>
+            <div class="fc-title">Architecture Agnostic</div>
+            <div class="fc-body">Works on any linear layer: attention Q/K/V/O projections, feed-forward layers, cross-attention — even ControlNet branches.</div>
+        </div>
+        <div class="feat-card" style="border-top-color:#ff9800;">
+            <div class="fc-icon">🔌</div>
+            <div class="fc-title">Composable Adapters</div>
+            <div class="fc-body">Multiple LoRA adapters (style + defect type + surface material) can be loaded simultaneously with independent scaling weights α.</div>
+        </div>
+    </div>
+
+    <!-- Equation block -->
+    <div class="eq-box">
+        <div class="eq-label">LoRA — Core Math</div>
+        <div>Standard linear layer:  h = W₀ · x</div>
+        <div style="margin-top:6px;">LoRA modification:     h = W₀ · x  +  (B · A) · x · α/r</div>
+        <div style="margin-top:6px;color:#4fc3f7;">where:  W₀ ∈ ℝ<sup>d×k</sup>  (frozen),  B ∈ ℝ<sup>d×r</sup>  (init 𝒩(0,σ)),  A ∈ ℝ<sup>r×k</sup>  (init 0)</div>
+        <div style="margin-top:6px;color:#f5a623;">Trainable params per layer:  (d + k) × r  vs  d × k  full</div>
+        <div style="margin-top:6px;color:#00d2a0;">Example (SD attn proj, d=k=768, r=4):  0.1% of original layer params</div>
+    </div>
+
+    <!-- Parameter comparison table -->
+    <h3 style="color:#1a1a2e;font-size:1.05em;margin:28px 0 12px;font-weight:800;">📊 PEFT Method Comparison</h3>
+    <table class="cmp-table">
+        <thead><tr>
+            <th>Method</th>
+            <th>Trainable Params</th>
+            <th>VRAM Delta</th>
+            <th>Inference Overhead</th>
+            <th>Composable</th>
+            <th>Best Use-Case</th>
+        </tr></thead>
+        <tbody>
+            <tr>
+                <td><strong>Full Fine-Tune</strong></td>
+                <td>100 % (859 M for SD 1.5)</td>
+                <td>~16 GB extra</td>
+                <td>None (merged)</td>
+                <td>❌</td>
+                <td>Large data, max quality</td>
+            </tr>
+            <tr>
+                <td><strong style="color:#f5a623;">LoRA</strong></td>
+                <td>0.06 – 2 % (rank 4–64)</td>
+                <td>~0.1–2 GB</td>
+                <td>None (merge at load)</td>
+                <td>✅ Multiple</td>
+                <td>Domain / style adaptation</td>
+            </tr>
+            <tr>
+                <td><strong>LoHa</strong></td>
+                <td>~0.1 % (Hadamard)</td>
+                <td>~0.05 GB</td>
+                <td>None</td>
+                <td>✅</td>
+                <td>Extreme memory constraint</td>
+            </tr>
+            <tr>
+                <td><strong>IA³</strong></td>
+                <td>&lt;0.01 %</td>
+                <td>&lt;50 MB</td>
+                <td>None</td>
+                <td>✅</td>
+                <td>Few-shot task vectors</td>
+            </tr>
+            <tr>
+                <td><strong>DreamBooth</strong></td>
+                <td>100 % (full UNet)</td>
+                <td>~16 GB</td>
+                <td>None</td>
+                <td>❌</td>
+                <td>Subject/concept injection</td>
+            </tr>
+            <tr>
+                <td><strong>DreamBooth + LoRA</strong></td>
+                <td>0.1–2 % only</td>
+                <td>~1 GB</td>
+                <td>None</td>
+                <td>✅</td>
+                <td>Subject + domain (our use-case) ✓</td>
+            </tr>
+            <tr>
+                <td><strong>Textual Inversion</strong></td>
+                <td>~4 KB (token only)</td>
+                <td>Negligible</td>
+                <td>None</td>
+                <td>✅</td>
+                <td>Concept token embedding</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- Canvas: param count comparison bar chart -->
+    <div class="canvas-wrap" style="margin-top:28px;">
+        <div class="canvas-title">📉 Trainable Parameter Count — Animated Bar Chart</div>
+        <canvas id="paramBarCanvas" width="900" height="220"></canvas>
+    </div>
+</div>
+<!-- end section 1 -->
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SECTION 2 — LoRA MECHANICS DEEP-DIVE
+═══════════════════════════════════════════════════════════════ -->
+<div class="section-block">
+    <div class="section-label">Section 02</div>
+    <h2 class="section-title">LoRA Mechanics — Animated Weight Decomposition</h2>
+    <p class="section-sub">
+        Every attention layer in a U-Net contains projection matrices (Q, K, V, Out). LoRA
+        adds a parallel low-rank bypass: a tiny B×A path whose output is scaled by α/r
+        and added to the frozen W₀ output. The animation below shows how a rank-4 update
+        flows through a 768×768 attention projection at training time.
+    </p>
+
+    <!-- Canvas: weight matrix decomposition -->
+    <div class="canvas-wrap">
+        <div class="canvas-title">🧮 Canvas A — LoRA Weight Matrix Decomposition (Live Animation)</div>
+        <canvas id="loraDecompCanvas" width="900" height="340"></canvas>
+    </div>
+
+    <div class="highlight-box" style="margin-top:20px;">
+        <strong>Why initialise A with 𝒩(0,σ) and B with zeros?</strong><br>
+        At the start of training, B·A = 0 so the LoRA adapter contributes nothing —
+        the model behaves identically to the frozen base. This means the very first
+        gradient step is well-conditioned and does not destroy the base model's outputs.
+        Only A is random, ensuring B·A is not stuck at a saddle point.
+    </div>
+
+    <!-- Gradient flow eq -->
+    <div class="eq-box">
+        <div class="eq-label">Gradient Flow — what gets updated</div>
+        <div>Forward:   h = W₀·x  +  (B·A)·x · (α/r)</div>
+        <div style="margin-top:6px;">Loss:       ℒ = MSE( ε_θ(z_t, t, c) , ε )</div>
+        <div style="margin-top:6px;color:#ff7b72;">∂ℒ/∂W₀ = 0  &nbsp;&nbsp;&nbsp; (frozen, no grad accumulation → saves VRAM)</div>
+        <div style="margin-top:6px;color:#f5a623;">∂ℒ/∂B  = (∂ℒ/∂h) · (Ax)ᵀ · (α/r)</div>
+        <div style="margin-top:6px;color:#f5a623;">∂ℒ/∂A  = Bᵀ · (∂ℒ/∂h) · xᵀ  · (α/r)</div>
+        <div style="margin-top:6px;color:#00d2a0;">Optimizer updates only (A, B) — 2×r×(d+k) floats per layer</div>
+    </div>
+
+    <!-- Rank effect param cards -->
+    <h3 style="color:#1a1a2e;font-size:1em;margin:28px 0 12px;font-weight:800;">⚙️ Rank Selection — Effect on Params &amp; Quality (SD 1.5 U-Net, d=k=768)</h3>
+    <div class="param-cards">
+        <div class="param-card">
+            <div class="pc-name">Rank r = 1</div>
+            <div class="pc-val">0.026%</div>
+            <div class="pc-desc">~1,536 params/layer. Minimal capacity — good for colour/tone shift only.</div>
+        </div>
+        <div class="param-card">
+            <div class="pc-name">Rank r = 4</div>
+            <div class="pc-val">0.10%</div>
+            <div class="pc-desc">~6,144 params/layer. Sweet spot for style &amp; surface texture adaptation.</div>
+        </div>
+        <div class="param-card">
+            <div class="pc-name">Rank r = 16</div>
+            <div class="pc-val">0.42%</div>
+            <div class="pc-desc">~24,576 params/layer. Handles complex defect topology and structure changes.</div>
+        </div>
+        <div class="param-card">
+            <div class="pc-name">Rank r = 64</div>
+            <div class="pc-val">1.67%</div>
+            <div class="pc-desc">~98,304 params/layer. Near full fine-tune quality; use when data is abundant.</div>
+        </div>
+        <div class="param-card">
+            <div class="pc-name">α (scale)</div>
+            <div class="pc-val">1 – 2×r</div>
+            <div class="pc-desc">Controls adapter strength. α=r gives unit scale; α=2r doubles the update magnitude.</div>
+        </div>
+        <div class="param-card">
+            <div class="pc-name">Target modules</div>
+            <div class="pc-val">Q K V O</div>
+            <div class="pc-desc">Apply LoRA to all attention projections + optionally feed-forward for max quality.</div>
+        </div>
+    </div>
+
+    <!-- HuggingFace PEFT code -->
+    <div class="code-block">
+        <div class="code-label">Python — Attach LoRA to a Diffusers UNet (HuggingFace PEFT)</div>
+        <pre><span class="kw">from</span> diffusers <span class="kw">import</span> UNet2DConditionModel
+<span class="kw">from</span> peft <span class="kw">import</span> LoraConfig, get_peft_model, TaskType
+
+<span class="cm"># 1. Load frozen base UNet</span>
+unet = UNet2DConditionModel.from_pretrained(
+    <span class="st">"runwayml/stable-diffusion-v1-5"</span>, subfolder=<span class="st">"unet"</span>
+)
+
+<span class="cm"># 2. Define LoRA config — targets all attention projections</span>
+lora_config = LoraConfig(
+    r=<span class="nm">4</span>,                          <span class="cm"># rank</span>
+    lora_alpha=<span class="nm">4</span>,                  <span class="cm"># scale α = r  → unit scale</span>
+    target_modules=[<span class="st">"to_q"</span>, <span class="st">"to_k"</span>, <span class="st">"to_v"</span>, <span class="st">"to_out.0"</span>],
+    lora_dropout=<span class="nm">0.05</span>,
+    bias=<span class="st">"none"</span>,
+)
+
+<span class="cm"># 3. Wrap UNet — only LoRA (A, B) matrices are trainable</span>
+unet = get_peft_model(unet, lora_config)
+unet.print_trainable_parameters()
+<span class="cm"># → trainable params: 797,696 || all params: 859,520,964 || 0.09%</span>
+
+<span class="cm"># 4. Freeze everything except LoRA</span>
+<span class="kw">for</span> name, param <span class="kw">in</span> unet.named_parameters():
+    <span class="kw">if</span> <span class="st">"lora_"</span> <span class="kw">not in</span> name:
+        param.requires_grad = <span class="nm">False</span>
+
+<span class="cm"># 5. Save only the adapter (not the full model)</span>
+unet.save_pretrained(<span class="st">"./lora_wall_defect_r4"</span>)   <span class="cm"># ~3 MB file</span>
+
+<span class="cm"># 6. Load and merge at inference</span>
+<span class="kw">from</span> peft <span class="kw">import</span> PeftModel
+unet_base = UNet2DConditionModel.from_pretrained(
+    <span class="st">"runwayml/stable-diffusion-v1-5"</span>, subfolder=<span class="st">"unet"</span>
+)
+unet_lora = PeftModel.from_pretrained(unet_base, <span class="st">"./lora_wall_defect_r4"</span>)
+unet_merged = unet_lora.merge_and_unload()   <span class="cm"># W′ = W₀ + BA, zero latency</span></pre>
+    </div>
+
+    <!-- Canvas: rank visualisation -->
+    <div class="canvas-wrap" style="margin-top:24px;">
+        <div class="canvas-title">📐 Canvas B — Low-Rank Approximation: r=4 vs Full Matrix (Animated)</div>
+        <canvas id="rankVizCanvas" width="900" height="260"></canvas>
+    </div>
+</div>
+<!-- end section 2 -->
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SECTION 3 — COMBINED ARCHITECTURE CANVAS
+═══════════════════════════════════════════════════════════════ -->
+<div class="section-block">
+    <div class="section-label">Section 03</div>
+    <h2 class="section-title">Combined Architecture — Diffusion + ControlNet + LoRA</h2>
+    <p class="section-sub">
+        The three components stack as independent, complementary layers on top of the same
+        frozen SD backbone. LoRA adapters sit inside the attention projections of both the
+        frozen U-Net AND the ControlNet branch. Animated dots show signal flow at inference time.
+    </p>
+
+    <div class="canvas-wrap">
+        <div class="canvas-title">🏗 Canvas C — Full Stacked Architecture (Frozen / ControlNet / LoRA layers animated)</div>
+        <canvas id="archCanvas" width="900" height="480"></canvas>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-top:24px;">
+        <div class="highlight-box" style="margin:0;">
+            <strong style="color:#667eea;">🧊 Frozen SD Backbone</strong><br>
+            Pre-trained U-Net encoder + bottleneck + decoder. Weights never change.
+            Retains all photorealistic texture priors learned on LAION-5B.
+            Grey blocks in the animation.
+        </div>
+        <div class="highlight-box" style="margin:0;">
+            <strong style="color:#e94560;">🎛 ControlNet Branch</strong><br>
+            Copied &amp; trainable encoder + zero-convolutions. Conditions on spatial
+            hint (edge/mask/depth). Red blocks — trained separately, injected
+            into frozen decoder skip connections.
+        </div>
+        <div class="highlight-box" style="margin:0;">
+            <strong style="color:#f5a623;">✨ LoRA Adapters</strong><br>
+            Gold pulsing overlays on every attention layer (Q/K/V/O).
+            Only B×A matrices are trained. Applied to both SD U-Net attn
+            AND ControlNet attn for domain-specific surface appearance.
+        </div>
+    </div>
+
+    <!-- Frozen vs trainable table -->
+    <h3 style="color:#1a1a2e;font-size:1em;margin:28px 0 12px;font-weight:800;">🔒 What is Frozen vs Trainable</h3>
+    <table class="cmp-table">
+        <thead><tr><th>Component</th><th>Weights Frozen?</th><th>Trained When?</th><th>Purpose</th><th>Params</th></tr></thead>
+        <tbody>
+            <tr><td>SD U-Net encoder/decoder</td><td>✅ Always frozen</td><td>Never</td><td>Photorealistic priors</td><td>~860 M (inactive)</td></tr>
+            <tr><td>SD U-Net LoRA (Q/K/V/O)</td><td>❌ Trainable</td><td>Phase 3 LoRA pass</td><td>Surface / material style</td><td>~800 K</td></tr>
+            <tr><td>ControlNet encoder copy</td><td>❌ Trainable</td><td>Phase 2 ControlNet pass</td><td>Spatial conditioning</td><td>~361 M</td></tr>
+            <tr><td>ControlNet LoRA (Q/K/V/O)</td><td>❌ Trainable</td><td>Phase 3 joint pass</td><td>Defect-domain adaptation</td><td>~400 K</td></tr>
+            <tr><td>Zero Convolutions</td><td>❌ Trainable</td><td>Phase 2 with ControlNet</td><td>Safe feature injection</td><td>~3 M</td></tr>
+            <tr><td>VAE encoder/decoder</td><td>✅ Always frozen</td><td>Never</td><td>Latent compression</td><td>~84 M (inactive)</td></tr>
+            <tr><td>Text encoder (CLIP)</td><td>✅ Always frozen</td><td>Never</td><td>Prompt conditioning</td><td>~123 M (inactive)</td></tr>
+        </tbody>
+    </table>
+</div>
+<!-- end section 3 -->
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SECTION 4 — DATASET VISUALISATION
+═══════════════════════════════════════════════════════════════ -->
+<div class="section-block">
+    <div class="section-label">Section 04</div>
+    <h2 class="section-title">Construction Dataset — Structure &amp; Visual Samples</h2>
+    <p class="section-sub">
+        The training dataset for wall-surface simulation is a <strong>triplet dataset</strong>:
+        each sample contains a real surface image, a spatial condition map (edge/depth/mask),
+        and a text prompt. The Canvas below simulates what each column of such a dataset looks like
+        — procedurally rendered to show texture diversity across defect types.
+    </p>
+
+    <!-- Dataset sample canvas -->
+    <div class="canvas-wrap">
+        <div class="canvas-title">🖼 Canvas D — Simulated Dataset Sample Grid (Procedural Wall Textures × 5 Columns)</div>
+        <canvas id="datasetCanvas" width="900" height="300"></canvas>
+    </div>
+
+    <!-- column labels -->
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:0;margin-top:0;">
+        <div class="ds-label" style="background:#1a1a2e;color:#4fc3f7;padding:8px;text-align:center;font-size:0.72em;font-weight:700;letter-spacing:1px;border-right:1px solid #333;">Clean Wall</div>
+        <div class="ds-label" style="background:#1a1a2e;color:#f5a623;padding:8px;text-align:center;font-size:0.72em;font-weight:700;letter-spacing:1px;border-right:1px solid #333;">Edge Map</div>
+        <div class="ds-label" style="background:#1a1a2e;color:#00d2a0;padding:8px;text-align:center;font-size:0.72em;font-weight:700;letter-spacing:1px;border-right:1px solid #333;">Defect Mask</div>
+        <div class="ds-label" style="background:#1a1a2e;color:#e94560;padding:8px;text-align:center;font-size:0.72em;font-weight:700;letter-spacing:1px;border-right:1px solid #333;">Depth Map</div>
+        <div class="ds-label" style="background:#1a1a2e;color:#9c27b0;padding:8px;text-align:center;font-size:0.72em;font-weight:700;letter-spacing:1px;">Synthetic Output</div>
+    </div>
+
+    <!-- Dataset stats cards -->
+    <h3 style="color:#1a1a2e;font-size:1em;margin:28px 0 12px;font-weight:800;">📊 Dataset Statistics &amp; Structure</h3>
+    <div class="metrics-grid">
+        <div class="metric-card" style="border-top-color:#4fc3f7;">
+            <div style="font-size:1.8em;margin-bottom:6px;">🧱</div>
+            <div style="font-weight:800;color:#1a1a2e;font-size:1.3em;">600+</div>
+            <div style="font-size:0.8em;color:#888;margin-top:4px;">Real wall images<br>(min viable dataset)</div>
+        </div>
+        <div class="metric-card" style="border-top-color:#e94560;">
+            <div style="font-size:1.8em;margin-bottom:6px;">🏷️</div>
+            <div style="font-weight:800;color:#1a1a2e;font-size:1.3em;">6</div>
+            <div style="font-size:0.8em;color:#888;margin-top:4px;">Defect classes<br>(crack/spall/eff/bio/rust/delam)</div>
+        </div>
+        <div class="metric-card" style="border-top-color:#f5a623;">
+            <div style="font-size:1.8em;margin-bottom:6px;">📐</div>
+            <div style="font-weight:800;color:#1a1a2e;font-size:1.3em;">512²</div>
+            <div style="font-size:0.8em;color:#888;margin-top:4px;">Training resolution<br>(768² for SDXL)</div>
+        </div>
+        <div class="metric-card" style="border-top-color:#00d2a0;">
+            <div style="font-size:1.8em;margin-bottom:6px;">🔀</div>
+            <div style="font-weight:800;color:#1a1a2e;font-size:1.3em;">×8</div>
+            <div style="font-size:0.8em;color:#888;margin-top:4px;">Augmentation factor<br>(flip/crop/colour jitter)</div>
+        </div>
+        <div class="metric-card" style="border-top-color:#9c27b0;">
+            <div style="font-size:1.8em;margin-bottom:6px;">📝</div>
+            <div style="font-weight:800;color:#1a1a2e;font-size:1.3em;">3</div>
+            <div style="font-size:0.8em;color:#888;margin-top:4px;">Captions per sample<br>(short / medium / detailed)</div>
+        </div>
+        <div class="metric-card" style="border-top-color:#ff5722;">
+            <div style="font-size:1.8em;margin-bottom:6px;">🗂️</div>
+            <div style="font-weight:800;color:#1a1a2e;font-size:1.3em;">WebDS</div>
+            <div style="font-size:0.8em;color:#888;margin-top:4px;">Storage format<br>(WebDataset .tar shards)</div>
+        </div>
+    </div>
+
+    <!-- Dataset loading code -->
+    <div class="code-block">
+        <div class="code-label">Python — Dataset Class: Wall / Mask / Prompt Triplets</div>
+        <pre><span class="kw">import</span> torch
+<span class="kw">from</span> torch.utils.data <span class="kw">import</span> Dataset
+<span class="kw">from</span> pathlib <span class="kw">import</span> Path
+<span class="kw">from</span> PIL <span class="kw">import</span> Image
+<span class="kw">import</span> torchvision.transforms <span class="kw">as</span> T
+<span class="kw">import</span> json, random
+
+<span class="kw">class</span> <span class="dec">WallDefectDataset</span>(Dataset):
+    <span class="st">"""
+    Directory structure:
+      data/
+        images/   *.jpg   — clean wall photos
+        masks/    *.png   — binary defect masks (0=clean, 255=defect)
+        edges/    *.png   — Canny/HED edge maps
+        depth/    *.png   — MiDaS depth maps
+        captions/ *.json  — {"short":..., "medium":..., "detailed":...}
+    """</span>
+    <span class="kw">def</span> <span class="fn">__init__</span>(self, root, resolution=<span class="nm">512</span>, augment=<span class="nm">True</span>):
+        self.root       = Path(root)
+        self.ids        = sorted(p.stem <span class="kw">for</span> p <span class="kw">in</span> (self.root/<span class="st">"images"</span>).glob(<span class="st">"*.jpg"</span>))
+        self.resolution = resolution
+        self.augment    = augment
+        self.tfm = T.Compose([
+            T.Resize((resolution, resolution), interpolation=T.InterpolationMode.BILINEAR),
+            T.ToTensor(),
+            T.Normalize([<span class="nm">0.5</span>], [<span class="nm">0.5</span>]),   <span class="cm"># → [-1, 1]</span>
+        ])
+        self.mask_tfm = T.Compose([
+            T.Resize((resolution, resolution), interpolation=T.InterpolationMode.NEAREST),
+            T.ToTensor(),
+        ])
+
+    <span class="kw">def</span> <span class="fn">__len__</span>(self):
+        <span class="kw">return</span> len(self.ids)
+
+    <span class="kw">def</span> <span class="fn">__getitem__</span>(self, idx):
+        stem = self.ids[idx]
+
+        image = Image.open(self.root/<span class="st">"images"</span>/f<span class="st">"{stem}.jpg"</span>).convert(<span class="st">"RGB"</span>)
+        mask  = Image.open(self.root/<span class="st">"masks"</span> /f<span class="st">"{stem}.png"</span>).convert(<span class="st">"L"</span>)
+        edge  = Image.open(self.root/<span class="st">"edges"</span> /f<span class="st">"{stem}.png"</span>).convert(<span class="st">"RGB"</span>)
+
+        <span class="cm"># Random horizontal flip augmentation</span>
+        <span class="kw">if</span> self.augment <span class="kw">and</span> random.random() > <span class="nm">0.5</span>:
+            image = image.transpose(Image.FLIP_LEFT_RIGHT)
+            mask  = mask.transpose(Image.FLIP_LEFT_RIGHT)
+            edge  = edge.transpose(Image.FLIP_LEFT_RIGHT)
+
+        captions = json.loads((self.root/<span class="st">"captions"</span>/f<span class="st">"{stem}.json"</span>).read_text())
+        prompt   = random.choice([captions[<span class="st">"short"</span>], captions[<span class="st">"medium"</span>], captions[<span class="st">"detailed"</span>]])
+
+        <span class="kw">return</span> {
+            <span class="st">"pixel_values"</span>:     self.tfm(image),       <span class="cm"># (3, H, W)  [-1,1]</span>
+            <span class="st">"conditioning_image"</span>: self.tfm(edge),        <span class="cm"># ControlNet hint</span>
+            <span class="st">"mask"</span>:              self.mask_tfm(mask),   <span class="cm"># (1, H, W)  [0,1]</span>
+            <span class="st">"prompt"</span>:            prompt,
+        }
+
+<span class="cm"># Usage</span>
+dataset = <span class="dec">WallDefectDataset</span>(<span class="st">"./data"</span>, resolution=<span class="nm">512</span>)
+loader  = torch.utils.data.DataLoader(dataset, batch_size=<span class="nm">4</span>, shuffle=<span class="nm">True</span>, num_workers=<span class="nm">4</span>)
+<span class="kw">print</span>(f<span class="st">"Dataset: {len(dataset)} samples, {len(loader)} batches"</span>)</pre>
+    </div>
+</div>
+<!-- end section 4 -->
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SECTION 5 — END-TO-END TRAINING PIPELINE
+═══════════════════════════════════════════════════════════════ -->
+<div class="section-block">
+    <div class="section-label">Section 05</div>
+    <h2 class="section-title">End-to-End Training Pipeline — Animated Flow</h2>
+    <p class="section-sub">
+        The complete training loop combines a <strong>DataLoader → VAE Encode → Noise schedule →
+        ControlNet forward → U-Net (LoRA) denoise → Loss → Gradient update</strong> cycle.
+        The Canvas below animates each stage with data-flow pulses, showing what is frozen
+        (grey) and what receives gradients (coloured).
+    </p>
+
+    <div class="canvas-wrap">
+        <div class="canvas-title">⚙️ Canvas E — Full Training Loop (Live Animated Data Flow)</div>
+        <canvas id="pipelineCanvas" width="900" height="420"></canvas>
+    </div>
+
+    <!-- training phases timeline -->
+    <h3 style="color:#1a1a2e;font-size:1em;margin:28px 0 12px;font-weight:800;">📋 Training Phases</h3>
+    <div class="timeline">
+        <div class="tl-item">
+            <div class="tl-dot" style="background:#0d47a1;box-shadow:0 0 0 3px #0d47a1;"></div>
+            <div class="tl-content" style="border-left-color:#0d47a1;">
+                <div class="tl-title">Phase 1 — Warm-up: ControlNet Only (5k–10k steps)</div>
+                <p>Train only the ControlNet branch and Zero Convolutions. UNet LoRA adapters are frozen.
+                Batch size 4, LR 1e-4, DDPM scheduler. Goal: learn to extract spatial features from hint images.</p>
+            </div>
+        </div>
+        <div class="tl-item">
+            <div class="tl-dot" style="background:#e94560;box-shadow:0 0 0 3px #e94560;"></div>
+            <div class="tl-content" style="border-left-color:#e94560;">
+                <div class="tl-title">Phase 2 — Joint Training: ControlNet + LoRA (20k–50k steps)</div>
+                <p>Enable LoRA adapter gradients alongside ControlNet. The LoRA adapters in both the frozen
+                UNet and ControlNet branch are unfrozen. LR decayed to 2e-5. ControlNet conditioning_scale
+                annealed from 0.5 → 1.0 over first 10k steps to avoid dominance.</p>
+            </div>
+        </div>
+        <div class="tl-item">
+            <div class="tl-dot" style="background:#f5a623;box-shadow:0 0 0 3px #f5a623;"></div>
+            <div class="tl-content" style="border-left-color:#f5a623;">
+                <div class="tl-title">Phase 3 — Domain Fine-Tune: LoRA Only (2k–5k steps)</div>
+                <p>Freeze ControlNet branch completely. Continue training only LoRA adapters on
+                target-domain images (e.g. specific building material, lighting condition).
+                LR 5e-6. This "last-mile" phase adapts appearance without disturbing spatial conditioning.</p>
+            </div>
+        </div>
+        <div class="tl-item">
+            <div class="tl-dot" style="background:#00d2a0;box-shadow:0 0 0 3px #00d2a0;"></div>
+            <div class="tl-content" style="border-left-color:#00d2a0;">
+                <div class="tl-title">Phase 4 — Evaluation &amp; Checkpoint (every 500 steps)</div>
+                <p>Generate 64 synthetic samples with held-out masks. Compute FID against real validation
+                images. Log FID / SSIM / LPIPS to WandB. Save checkpoint if FID improves.
+                Run downstream defect-detector (YOLOv8) on synthetic augmented set; track mAP@0.5.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Training config YAML -->
+    <div class="code-block" style="margin-top:24px;">
+        <div class="code-label">YAML — accelerate training config</div>
+        <pre><span class="cm"># train_config.yaml</span>
+pretrained_model:     <span class="st">"runwayml/stable-diffusion-v1-5"</span>
+controlnet_model:     <span class="st">"lllyasviel/control_v11p_sd15_lineart"</span>
+output_dir:           <span class="st">"./checkpoints/wall_lora_cn"</span>
+data_root:            <span class="st">"./data"</span>
+resolution:           <span class="nm">512</span>
+
+<span class="cm"># LoRA</span>
+lora_rank:            <span class="nm">4</span>
+lora_alpha:           <span class="nm">4</span>
+target_modules:       [<span class="st">"to_q"</span>, <span class="st">"to_k"</span>, <span class="st">"to_v"</span>, <span class="st">"to_out.0"</span>]
+
+<span class="cm"># Training</span>
+train_batch_size:     <span class="nm">4</span>
+gradient_accumulation_steps: <span class="nm">4</span>   <span class="cm"># effective batch = 16</span>
+learning_rate:        <span class="nm">1e-4</span>
+lr_scheduler:         <span class="st">"cosine_with_restarts"</span>
+max_train_steps:      <span class="nm">50000</span>
+checkpointing_steps:  <span class="nm">500</span>
+mixed_precision:      <span class="st">"fp16"</span>
+gradient_checkpointing: <span class="nm">true</span>
+use_8bit_adam:        <span class="nm">true</span>
+
+<span class="cm"># ControlNet conditioning scale annealing</span>
+conditioning_scale_start: <span class="nm">0.5</span>
+conditioning_scale_end:   <span class="nm">1.0</span>
+conditioning_scale_steps: <span class="nm">10000</span></pre>
+    </div>
+
+    <!-- Launch command -->
+    <div class="code-block">
+        <div class="code-label">Shell — Multi-GPU Launch with accelerate</div>
+        <pre><span class="cm"># Configure accelerate (run once)</span>
+accelerate config
+
+<span class="cm"># Launch training on 2× A100 80GB</span>
+accelerate launch \
+    --num_processes 2 \
+    --mixed_precision fp16 \
+    train_controlnet_lora.py \
+    --config train_config.yaml \
+    --report_to wandb \
+    --tracker_project_name "wall-defect-synthesis"
+
+<span class="cm"># Monitor training</span>
+wandb online     <span class="cm"># opens browser dashboard</span></pre>
+    </div>
+
+    <!-- Evaluation metrics table -->
+    <h3 style="color:#1a1a2e;font-size:1em;margin:28px 0 12px;font-weight:800;">📈 Evaluation Metrics — Target Thresholds</h3>
+    <table class="cmp-table">
+        <thead><tr><th>Metric</th><th>What it measures</th><th>Target (production)</th><th>Acceptable</th><th>Tool</th></tr></thead>
+        <tbody>
+            <tr><td><strong>FID ↓</strong></td><td>Perceptual realism vs real images</td><td>&lt; 15</td><td>&lt; 30</td><td><code>clean-fid</code></td></tr>
+            <tr><td><strong>SSIM ↑</strong></td><td>Structural similarity to target</td><td>&gt; 0.88</td><td>&gt; 0.75</td><td><code>torchmetrics</code></td></tr>
+            <tr><td><strong>LPIPS ↓</strong></td><td>Perceptual distance (VGG)</td><td>&lt; 0.12</td><td>&lt; 0.22</td><td><code>lpips</code></td></tr>
+            <tr><td><strong>mAP@0.5 ↑</strong></td><td>Defect detector on synthetic aug.</td><td>&gt; 0.78</td><td>&gt; 0.65</td><td><code>ultralytics</code></td></tr>
+            <tr><td><strong>Mask IoU ↑</strong></td><td>Defect location accuracy vs label</td><td>&gt; 0.80</td><td>&gt; 0.65</td><td><code>torchmetrics</code></td></tr>
+            <tr><td><strong>CLIPScore ↑</strong></td><td>Text-image alignment</td><td>&gt; 0.28</td><td>&gt; 0.22</td><td><code>torchmetrics</code></td></tr>
+        </tbody>
+    </table>
+</div>
+<!-- end section 5 -->
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SECTION 6 — COMPLETE CODE SAMPLES
+═══════════════════════════════════════════════════════════════ -->
+<div class="section-block">
+    <div class="section-label">Section 06</div>
+    <h2 class="section-title">Complete Runnable Code</h2>
+    <p class="section-sub">
+        Three production-ready code samples: the full training script that orchestrates all three
+        components, an inference pipeline that loads checkpoints and generates controlled defect images,
+        and helper utilities for augmentation and evaluation.
+    </p>
+
+    <!-- Training script -->
+    <div class="code-block">
+        <div class="code-label">Python — Full Training Script (Diffusers + ControlNet + LoRA + accelerate)</div>
+        <pre><span class="cm">#!/usr/bin/env python3
+# train_controlnet_lora.py — End-to-end wall defect synthesis training</span>
+<span class="kw">import</span> torch, argparse, yaml, wandb
+<span class="kw">from</span> pathlib <span class="kw">import</span> Path
+<span class="kw">from</span> accelerate <span class="kw">import</span> Accelerator
+<span class="kw">from</span> diffusers <span class="kw">import</span> (
+    AutoencoderKL, UNet2DConditionModel, ControlNetModel,
+    DDPMScheduler, StableDiffusionControlNetPipeline
+)
+<span class="kw">from</span> transformers <span class="kw">import</span> CLIPTextModel, CLIPTokenizer
+<span class="kw">from</span> peft <span class="kw">import</span> LoraConfig, get_peft_model
+<span class="kw">from</span> dataset <span class="kw">import</span> WallDefectDataset   <span class="cm"># from Section 4</span>
+
+<span class="kw">def</span> <span class="fn">main</span>(cfg):
+    accelerator = Accelerator(mixed_precision=cfg[<span class="st">"mixed_precision"</span>], log_with=<span class="st">"wandb"</span>)
+    accelerator.init_trackers(<span class="st">"wall-defect-synthesis"</span>)
+
+    <span class="cm"># ── Load models ──────────────────────────────────────────</span>
+    vae         = AutoencoderKL.from_pretrained(cfg[<span class="st">"pretrained_model"</span>], subfolder=<span class="st">"vae"</span>)
+    text_enc    = CLIPTextModel.from_pretrained(cfg[<span class="st">"pretrained_model"</span>], subfolder=<span class="st">"text_encoder"</span>)
+    tokenizer   = CLIPTokenizer.from_pretrained(cfg[<span class="st">"pretrained_model"</span>], subfolder=<span class="st">"tokenizer"</span>)
+    unet        = UNet2DConditionModel.from_pretrained(cfg[<span class="st">"pretrained_model"</span>], subfolder=<span class="st">"unet"</span>)
+    controlnet  = ControlNetModel.from_pretrained(cfg[<span class="st">"controlnet_model"</span>])
+    noise_sched = DDPMScheduler.from_pretrained(cfg[<span class="st">"pretrained_model"</span>], subfolder=<span class="st">"scheduler"</span>)
+
+    <span class="cm"># ── Freeze what should not train ─────────────────────────</span>
+    vae.requires_grad_(False); text_enc.requires_grad_(False)
+
+    <span class="cm"># ── Attach LoRA to UNet attention layers ─────────────────</span>
+    lora_cfg = LoraConfig(
+        r=cfg[<span class="st">"lora_rank"</span>], lora_alpha=cfg[<span class="st">"lora_alpha"</span>],
+        target_modules=cfg[<span class="st">"target_modules"</span>], lora_dropout=<span class="nm">0.05</span>, bias=<span class="st">"none"</span>
+    )
+    unet = get_peft_model(unet, lora_cfg)
+
+    <span class="cm"># ── Dataset ───────────────────────────────────────────────</span>
+    dataset = WallDefectDataset(cfg[<span class="st">"data_root"</span>], resolution=cfg[<span class="st">"resolution"</span>])
+    loader  = torch.utils.data.DataLoader(
+        dataset, batch_size=cfg[<span class="st">"train_batch_size"</span>], shuffle=<span class="nm">True</span>, num_workers=<span class="nm">4</span>
+    )
+
+    <span class="cm"># ── Optimizer — only LoRA + ControlNet params ─────────────</span>
+    params = list(filter(<span class="kw">lambda</span> p: p.requires_grad,
+                         list(unet.parameters()) + list(controlnet.parameters())))
+    optim  = torch.optim.AdamW(params, lr=cfg[<span class="st">"learning_rate"</span>], weight_decay=<span class="nm">1e-2</span>)
+
+    unet, controlnet, optim, loader = accelerator.prepare(unet, controlnet, optim, loader)
+    vae = vae.to(accelerator.device, dtype=torch.float16)
+    text_enc = text_enc.to(accelerator.device, dtype=torch.float16)
+
+    global_step = <span class="nm">0</span>
+    <span class="kw">for</span> epoch <span class="kw">in</span> range(<span class="nm">9999</span>):
+        <span class="kw">for</span> batch <span class="kw">in</span> loader:
+            <span class="kw">with</span> accelerator.accumulate(unet, controlnet):
+
+                <span class="cm"># Encode images to latent space</span>
+                <span class="kw">with</span> torch.no_grad():
+                    latents = vae.encode(
+                        batch[<span class="st">"pixel_values"</span>].to(dtype=torch.float16)
+                    ).latent_dist.sample() * <span class="nm">0.18215</span>
+
+                <span class="cm"># Sample noise and timestep</span>
+                noise  = torch.randn_like(latents)
+                bsz    = latents.shape[<span class="nm">0</span>]
+                steps  = torch.randint(<span class="nm">0</span>, noise_sched.config.num_train_timesteps,
+                                       (bsz,), device=latents.device).long()
+                noisy_latents = noise_sched.add_noise(latents, noise, steps)
+
+                <span class="cm"># Encode text prompts</span>
+                <span class="kw">with</span> torch.no_grad():
+                    tokens = tokenizer(batch[<span class="st">"prompt"</span>], padding=<span class="st">"max_length"</span>,
+                                       max_length=<span class="nm">77</span>, return_tensors=<span class="st">"pt"</span>,
+                                       truncation=<span class="nm">True</span>).input_ids.to(latents.device)
+                    enc_hidden = text_enc(tokens)[<span class="nm">0</span>].to(dtype=torch.float16)
+
+                <span class="cm"># ControlNet forward pass</span>
+                cn_out = controlnet(
+                    noisy_latents, steps, enc_hidden,
+                    controlnet_cond=batch[<span class="st">"conditioning_image"</span>].to(dtype=torch.float16),
+                    return_dict=<span class="nm">False</span>
+                )
+                down_blk_res, mid_blk_res = cn_out[<span class="nm">0</span>], cn_out[<span class="nm">1</span>]
+
+                <span class="cm"># U-Net + LoRA forward — predict noise</span>
+                noise_pred = unet(
+                    noisy_latents, steps, enc_hidden,
+                    down_block_additional_residuals=down_blk_res,
+                    mid_block_additional_residual=mid_blk_res,
+                ).sample
+
+                <span class="cm"># MSE loss against original noise</span>
+                loss = torch.nn.functional.mse_loss(
+                    noise_pred.float(), noise.float(), reduction=<span class="st">"mean"</span>
+                )
+                accelerator.backward(loss)
+                <span class="kw">if</span> accelerator.sync_gradients:
+                    accelerator.clip_grad_norm_(params, <span class="nm">1.0</span>)
+                optim.step(); optim.zero_grad()
+
+            global_step += <span class="nm">1</span>
+            <span class="kw">if</span> global_step % <span class="nm">50</span> == <span class="nm">0</span>:
+                accelerator.log({<span class="st">"loss"</span>: loss.detach().item()}, step=global_step)
+
+            <span class="kw">if</span> global_step >= cfg[<span class="st">"max_train_steps"</span>]: <span class="kw">break</span>
+        <span class="kw">if</span> global_step >= cfg[<span class="st">"max_train_steps"</span>]: <span class="kw">break</span>
+
+    <span class="cm"># Save LoRA adapter + ControlNet weights</span>
+    unet.save_pretrained(Path(cfg[<span class="st">"output_dir"</span>])/<span class="st">"lora_unet"</span>)
+    controlnet.save_pretrained(Path(cfg[<span class="st">"output_dir"</span>])/<span class="st">"controlnet"</span>)
+    accelerator.end_training()
+
+<span class="kw">if</span> __name__ == <span class="st">"__main__"</span>:
+    parser = argparse.ArgumentParser()
+    parser.add_argument(<span class="st">"--config"</span>, required=<span class="nm">True</span>)
+    args = parser.parse_args()
+    <span class="kw">with</span> open(args.config) <span class="kw">as</span> f:
+        cfg = yaml.safe_load(f)
+    main(cfg)</pre>
+    </div>
+
+    <!-- Inference script -->
+    <div class="code-block" style="margin-top:24px;">
+        <div class="code-label">Python — Inference: Load LoRA + ControlNet → Generate Defect</div>
+        <pre><span class="kw">from</span> diffusers <span class="kw">import</span> StableDiffusionControlNetPipeline, ControlNetModel, UniPCMultistepScheduler
+<span class="kw">from</span> peft <span class="kw">import</span> PeftModel
+<span class="kw">import</span> torch
+<span class="kw">from</span> PIL <span class="kw">import</span> Image
+
+CKPT_DIR = <span class="st">"./checkpoints/wall_lora_cn"</span>
+BASE_MODEL = <span class="st">"runwayml/stable-diffusion-v1-5"</span>
+
+<span class="cm"># 1. Load fine-tuned ControlNet</span>
+controlnet = ControlNetModel.from_pretrained(
+    f<span class="st">"{CKPT_DIR}/controlnet"</span>, torch_dtype=torch.float16
+)
+
+<span class="cm"># 2. Build pipeline</span>
+pipe = StableDiffusionControlNetPipeline.from_pretrained(
+    BASE_MODEL, controlnet=controlnet, torch_dtype=torch.float16
+).to(<span class="st">"cuda"</span>)
+
+<span class="cm"># 3. Load LoRA weights into UNet</span>
+pipe.unet = PeftModel.from_pretrained(
+    pipe.unet, f<span class="st">"{CKPT_DIR}/lora_unet"</span>
+).merge_and_unload()    <span class="cm"># W′ = W₀ + BA — zero inference overhead</span>
+
+<span class="cm"># 4. Use fast scheduler</span>
+pipe.scheduler = UniPCMultistepScheduler.from_config(pipe.scheduler.config)
+pipe.enable_xformers_memory_efficient_attention()
+
+<span class="cm"># 5. Generate synthetic defect image</span>
+hint  = Image.open(<span class="st">"crack_mask.png"</span>).convert(<span class="st">"RGB"</span>)   <span class="cm"># edge / mask condition</span>
+
+result = pipe(
+    prompt=<span class="st">"concrete wall with a photorealistic hairline crack, construction site, HDR, 4k"</span>,
+    negative_prompt=<span class="st">"cartoon, painting, blurry, oversaturated, text"</span>,
+    image=hint,
+    controlnet_conditioning_scale=<span class="nm">0.9</span>,
+    guidance_scale=<span class="nm">7.5</span>,
+    num_inference_steps=<span class="nm">25</span>,       <span class="cm"># UniPC is fast — 25 steps suffice</span>
+    generator=torch.Generator(<span class="st">"cuda"</span>).manual_seed(<span class="nm">42</span>)
+).images[<span class="nm">0</span>]
+
+result.save(<span class="st">"synthetic_crack_output.jpg"</span>)
+<span class="kw">print</span>(<span class="st">"✅ Saved — label = crack_mask.png (free annotation!)"</span>)</pre>
+    </div>
+</div>
+<!-- end section 6 -->
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SECTION 7 — TECH STACK
+═══════════════════════════════════════════════════════════════ -->
+<div class="section-block">
+    <div class="section-label">Section 07</div>
+    <h2 class="section-title">Tech Stack &amp; Ecosystem</h2>
+    <div class="badge-row">
+        <span class="badge" style="background:#e94560;">🎛 ControlNet</span>
+        <span class="badge" style="background:#7b1fa2;">✨ LoRA / PEFT</span>
+        <span class="badge" style="background:#0d47a1;">🤗 HuggingFace Diffusers</span>
+        <span class="badge" style="background:#1b5e20;">🔥 PyTorch 2.x</span>
+        <span class="badge" style="background:#bf360c;">⚡ xformers</span>
+        <span class="badge" style="background:#004d40;">🚀 accelerate + FSDP</span>
+        <span class="badge" style="background:#880e4f;">🔬 DreamBooth + LoRA</span>
+        <span class="badge" style="background:#4a148c;">📦 WebDataset</span>
+        <span class="badge" style="background:#33691e;">📊 WandB</span>
+        <span class="badge" style="background:#37474f;">🔭 UniPC / DPM++</span>
+        <span class="badge" style="background:#1a237e;">🐳 NVIDIA Container</span>
+        <span class="badge" style="background:#b71c1c;">📐 clean-fid / LPIPS</span>
+    </div>
+    <table class="cmp-table" style="margin-top:20px;">
+        <thead><tr><th>Library</th><th>Version</th><th>Role</th><th>VRAM</th></tr></thead>
+        <tbody>
+            <tr><td><strong>diffusers</strong></td><td>≥ 0.26</td><td>Pipeline + training utilities</td><td>—</td></tr>
+            <tr><td><strong>peft</strong></td><td>≥ 0.7</td><td>LoRA / LoHa / IA³ adapters</td><td>+0.1–2 GB</td></tr>
+            <tr><td><strong>accelerate</strong></td><td>≥ 0.26</td><td>Multi-GPU + mixed precision</td><td>—</td></tr>
+            <tr><td><strong>xformers</strong></td><td>≥ 0.0.23</td><td>Memory-efficient attention</td><td>−2–4 GB</td></tr>
+            <tr><td><strong>bitsandbytes</strong></td><td>≥ 0.41</td><td>8-bit AdamW optimizer</td><td>−0.5 GB</td></tr>
+            <tr><td><strong>SD 1.5 / SDXL</strong></td><td>—</td><td>Backbone generative model</td><td>6–16 GB</td></tr>
+            <tr><td><strong>clean-fid</strong></td><td>latest</td><td>FID evaluation</td><td>—</td></tr>
+        </tbody>
+    </table>
+</div>
+<!-- end section 7 -->
+
+<!-- ═══════════════════════════════════════════════════════════════
+     FOOTER
+═══════════════════════════════════════════════════════════════ -->
+<footer class="site-footer">
+    <div class="footer-inner">
+        <div class="footer-logo">
+            <span class="logo-bot" style="font-size:1.6em;">🤖</span>
+            <span class="footer-brand">BABABOSS</span>
+        </div>
+        <p class="footer-tagline">AI Systems · Visual Intelligence · Generative Research</p>
+        <nav class="footer-nav">
+            <a href="https://bababoss.github.io/aihackers/docs/ltxcore.html">LTX Video Core</a>
+            <a href="https://bababoss.github.io/aihackers/docs/diffusion.html">Diffusion Basics</a>
+            <a href="https://bababoss.github.io/aihackers/docs/genAIPhtotrealisticWallSurface.html">Wall Surface Sim</a>
+            <a href="https://bababoss.github.io/aihackers/docs/ControlNet_turns_diffusion_into_controllabl.html">ControlNet Guide</a>
+            <a href="https://bababoss.github.io/aihackers/docs/diffuer_controllnet_LORA_traing.html">This Blog</a>
+        </nav>
+        <p class="footer-copy">
+            © 2025 BABABOSS · Built with ❤️ and 🤖 ·
+            <a href="https://github.com/bababoss/aihackers" style="color:#4fc3f7;">github.com/bababoss/aihackers</a>
+        </p>
+    </div>
+</footer>
+
+</div><!-- end .content -->
+</div><!-- end .container -->
+
+<!-- ═══════════════════════ SCRIPTS ═══════════════════════ -->
+<script>
+/* ── INTERSECTION OBSERVER: reveal sections ── */
+(function(){
+    document.querySelectorAll('.section-block').forEach(function(el){
+        el.style.opacity='0'; el.style.transform='translateY(28px)'; el.style.transition='opacity 0.6s ease, transform 0.6s ease';
+    });
+    var obs = new IntersectionObserver(function(entries){
+        entries.forEach(function(e){ if(e.isIntersecting){ e.target.style.opacity='1'; e.target.style.transform='translateY(0)'; } });
+    },{threshold:0.08});
+    document.querySelectorAll('.section-block').forEach(function(el){ obs.observe(el); });
+})();
+
+/* ── CANVAS A0: Trainable parameter bar chart ── */
+(function(){
+    var c = document.getElementById('paramBarCanvas');
+    if(!c) return;
+    var ctx = c.getContext('2d');
+    var W=c.width, H=c.height;
+    var t=0;
+    var configs=[
+        {label:'Full FT',   params:589824, color:'#e94560', note:'100%'},
+        {label:'LoRA r=1',  params:1536,   color:'#ff9800', note:'0.26%'},
+        {label:'LoRA r=4',  params:6144,   color:'#f5a623', note:'0.10%'},
+        {label:'LoRA r=16', params:24576,  color:'#4fc3f7', note:'0.42%'},
+        {label:'LoRA r=64', params:98304,  color:'#00d2a0', note:'1.67%'},
+        {label:'IA³',       params:150,    color:'#ce93d8', note:'<0.01%'},
+    ];
+    var maxP=589824;
+    function animate(){
+        t+=0.02;
+        ctx.fillStyle='#0d0d1a'; ctx.fillRect(0,0,W,H);
+        var prog=Math.min(1, t/2.5);
+        var bw=80, gapW=(W-40)/configs.length, baseline=H-38, maxH=H-60;
+        configs.forEach(function(cfg,i){
+            var frac=cfg.params/maxP;
+            var bh=Math.max(4, frac*maxH*prog);
+            var x=20+i*gapW, y=baseline-bh;
+            var grad=ctx.createLinearGradient(x,y,x,y+bh);
+            grad.addColorStop(0,cfg.color); grad.addColorStop(1,cfg.color+'44');
+            ctx.fillStyle=grad;
+            ctx.beginPath();
+            if(ctx.roundRect) ctx.roundRect(x,y,bw,bh,5); else ctx.rect(x,y,bw,bh);
+            ctx.fill();
+            ctx.fillStyle='rgba(255,255,255,0.85)'; ctx.font='bold 10px Segoe UI'; ctx.textAlign='center';
+            ctx.fillText(cfg.label, x+bw/2, baseline+14);
+            if(prog>0.5){ ctx.fillStyle=cfg.color; ctx.font='bold 11px Segoe UI'; ctx.fillText(cfg.note, x+bw/2, y-6); }
+            if(prog>0.7){
+                var pStr=cfg.params>=1000?(cfg.params>=100000?(cfg.params/1000).toFixed(0)+'K':cfg.params.toLocaleString()):cfg.params+'';
+                ctx.fillStyle='rgba(255,255,255,0.6)'; ctx.font='9px Segoe UI'; ctx.fillText(pStr, x+bw/2, y+14);
+            }
+        });
+        ctx.strokeStyle='rgba(255,255,255,0.15)'; ctx.lineWidth=1;
+        ctx.beginPath(); ctx.moveTo(15,5); ctx.lineTo(15,baseline); ctx.lineTo(W-10,baseline); ctx.stroke();
+        ctx.fillStyle='rgba(255,255,255,0.4)'; ctx.font='10px Segoe UI'; ctx.textAlign='left';
+        ctx.fillText('Trainable params per attention projection layer (d=k=768, SD 1.5)', 20, 14);
+        requestAnimationFrame(animate);
+    }
+    animate();
+})();
+
+/* ── CANVAS A: LoRA weight decomposition animation ── */
+(function(){
+    var c = document.getElementById('loraDecompCanvas');
+    if(!c) return;
+    var ctx = c.getContext('2d');
+    var W=c.width, H=c.height;
+    var t=0;
+
+    function drawMatrix(x,y,w,h,label,color,fillFn){
+        // border
+        ctx.strokeStyle=color; ctx.lineWidth=2;
+        ctx.strokeRect(x,y,w,h);
+        // cells
+        var cols=8, rows=8;
+        var cw=w/cols, ch=h/rows;
+        for(var r=0;r<rows;r++){
+            for(var cc=0;cc<cols;cc++){
+                var v=fillFn(r,cc);
+                ctx.fillStyle='rgba('+v+')';
+                ctx.fillRect(x+cc*cw+1,y+r*ch+1,cw-2,ch-2);
+            }
+        }
+        // label
+        ctx.fillStyle=color; ctx.font='bold 12px Segoe UI'; ctx.textAlign='center';
+        ctx.fillText(label, x+w/2, y+h+18);
+    }
+
+    function animate(){
+        t+=0.03;
+        ctx.fillStyle='#0d0d1a'; ctx.fillRect(0,0,W,H);
+
+        // title
+        ctx.fillStyle='rgba(255,255,255,0.5)'; ctx.font='11px Segoe UI'; ctx.textAlign='left';
+        ctx.fillText('Each square = one weight value in the matrix. Yellow/warm = high magnitude. Blue/cool = near zero.', 20, 18);
+
+        // W0 (frozen) — random but static
+        drawMatrix(30,35,160,160,'W₀ (d×k frozen)','#667eea',function(r,cc){
+            var seed=(r*8+cc)*2.3+1.7;
+            var v=Math.abs(Math.sin(seed)*Math.cos(seed*1.3));
+            var ri=Math.round(v*80+20), gi=Math.round(v*60+10), bi=Math.round(150-v*80);
+            return ri+','+gi+','+bi+',0.85';
+        });
+
+        // B (trainable) — animated columns highlight
+        drawMatrix(240,35,40,160,'B (d×r)','#f5a623',function(r,cc){
+            var phase = (t*0.5 + r*0.15) % (2*Math.PI);
+            var v = Math.abs(Math.sin(phase));
+            return Math.round(v*245)+','+Math.round(v*150)+','+Math.round(30)+','+( 0.4+v*0.6);
+        });
+
+        // A (trainable) — animated rows highlight
+        drawMatrix(290,35,160,40,'A (r×k)','#f5a623',function(r,cc){
+            var phase = (t*0.5 + cc*0.15) % (2*Math.PI);
+            var v = Math.abs(Math.sin(phase));
+            return Math.round(v*245)+','+Math.round(v*150)+',30,'+( 0.4+v*0.6);
+        });
+
+        // ΔW = B·A — animated result
+        drawMatrix(460,35,160,160,'ΔW = B·A (low-rank update)','#00d2a0',function(r,cc){
+            var phase = (t*0.4 + (r+cc)*0.18) % (2*Math.PI);
+            var v = Math.abs(Math.sin(phase)) * 0.6;
+            return '0,'+Math.round(v*210)+','+Math.round(v*160)+','+( 0.3+v*0.7);
+        });
+
+        // W' = W0 + ΔW — result
+        drawMatrix(660,35,160,160,"W′ = W₀ + ΔW (merged)",'#e94560',function(r,cc){
+            var seed=(r*8+cc)*2.3+1.7;
+            var base=Math.abs(Math.sin(seed)*Math.cos(seed*1.3));
+            var phase=(t*0.4+(r+cc)*0.18)%(2*Math.PI);
+            var delta=Math.abs(Math.sin(phase))*0.3;
+            var v=Math.min(1,base+delta);
+            return Math.round(v*220)+','+Math.round(60+v*60)+','+Math.round(80+v*40)+',0.9';
+        });
+
+        // Operator labels
+        ctx.fillStyle='white'; ctx.font='bold 22px Segoe UI'; ctx.textAlign='center';
+        ctx.fillText('+', 205, 125);
+        ctx.fillText('×', 275, 125);
+        ctx.fillText('=', 445, 125);  // ΔW
+        ctx.fillText('+', 638, 125);  // W' = W0 + ΔW
+
+        // Dimension annotations
+        ctx.fillStyle='rgba(255,255,255,0.4)'; ctx.font='10px Segoe UI'; ctx.textAlign='center';
+        ctx.fillText('768×768', 110, 212);
+        ctx.fillText('768×4',   260, 212);
+        ctx.fillText('4×768',   370, 68);
+        ctx.fillText('768×768 (rank 4)', 540, 212);
+        ctx.fillText('768×768 (merged)', 740, 212);
+
+        // animated dot flowing from B→ΔW path
+        var dotX = 240 + ((t*60)%220);
+        ctx.beginPath();
+        ctx.arc(Math.min(dotX,450), 55, 4, 0, Math.PI*2);
+        ctx.fillStyle='#f5a623';
+        ctx.fill();
+
+        requestAnimationFrame(animate);
+    }
+    animate();
+})();
+
+/* ── CANVAS B: rank visualisation ── */
+(function(){
+    var c = document.getElementById('rankVizCanvas');
+    if(!c) return;
+    var ctx = c.getContext('2d');
+    var W=c.width, H=c.height;
+    var t=0;
+
+    function drawBar(x,y,bw,bh,color,label,pct,val){
+        var grad=ctx.createLinearGradient(x,y,x,y+bh);
+        grad.addColorStop(0,color); grad.addColorStop(1,color+'44');
+        ctx.fillStyle=grad;
+        ctx.beginPath();
+        if(ctx.roundRect) ctx.roundRect(x,y,bw,bh,5);
+        else ctx.rect(x,y,bw,bh);
+        ctx.fill();
+        ctx.fillStyle='white'; ctx.font='bold 11px Segoe UI'; ctx.textAlign='center';
+        ctx.fillText(label, x+bw/2, y+bh+16);
+        ctx.fillStyle=color; ctx.font='bold 12px Segoe UI';
+        ctx.fillText(val, x+bw/2, y-6);
+    }
+
+    function animate(){
+        t+=0.025;
+        ctx.fillStyle='#0d0d1a'; ctx.fillRect(0,0,W,H);
+
+        var maxH=H-50, baseline=H-30;
+        var configs=[
+            {label:'Full FT\n(768×768)',  params:589824, color:'#e94560'},
+            {label:'LoRA r=1', params:1536,   color:'#ff9800'},
+            {label:'LoRA r=4', params:6144,   color:'#f5a623'},
+            {label:'LoRA r=16',params:24576,  color:'#4fc3f7'},
+            {label:'LoRA r=64',params:98304,  color:'#00d2a0'},
+        ];
+        var maxP=589824;
+        var bw=80, gap=(W-80)/(configs.length);
+
+        // animated progress
+        var prog=Math.min(1,(Math.sin(t*0.4)+1)/2 * 0.9 + 0.05);
+
+        configs.forEach(function(cfg,i){
+            var frac=cfg.params/maxP;
+            var bh=Math.max(3, frac*maxH*prog);
+            var x=40+i*gap;
+            var y=baseline-bh;
+            drawBar(x,y,bw,bh,cfg.color,cfg.label,
+                cfg.params>=100000 ? (cfg.params/1000).toFixed(0)+'K' : cfg.params.toLocaleString());
+        });
+
+        // axis
+        ctx.strokeStyle='rgba(255,255,255,0.2)'; ctx.lineWidth=1;
+        ctx.beginPath(); ctx.moveTo(30,10); ctx.lineTo(30,baseline); ctx.lineTo(W-10,baseline); ctx.stroke();
+
+        ctx.fillStyle='rgba(79,195,247,0.5)'; ctx.font='bold 11px Segoe UI'; ctx.textAlign='left';
+        ctx.fillText('Params per attention layer (single projection, d=k=768)', 36, 14);
+
+        requestAnimationFrame(animate);
+    }
+    animate();
+})();
+
+/* ── CANVAS E: Training pipeline flow ── */
+(function(){
+    var c = document.getElementById('pipelineCanvas');
+    if(!c) return;
+    var ctx = c.getContext('2d');
+    var W=c.width, H=c.height;
+    var t=0;
+
+    // Pipeline stages: [x, y, w, h, label, sublabel, color, frozen]
+    var stages = [
+        {x:10,  y:30,  w:110,h:56,label:'DataLoader',     sub:'image+mask+prompt', col:'#1565c0', frozen:false},
+        {x:140, y:30,  w:110,h:56,label:'VAE Encoder',    sub:'img→latent z',      col:'#455a64', frozen:true},
+        {x:270, y:30,  w:110,h:56,label:'Noise Schedule', sub:'add ε at step t',   col:'#4a148c', frozen:false},
+        {x:400, y:30,  w:110,h:56,label:'Text Encoder',   sub:'CLIP embed τ',      col:'#455a64', frozen:true},
+        {x:530, y:30,  w:110,h:56,label:'ControlNet',     sub:'hint→features',     col:'#b71c1c', frozen:false},
+        {x:660, y:30,  w:110,h:56,label:'U-Net + LoRA',   sub:'ε_θ prediction',    col:'#7b1fa2', frozen:false},
+        {x:790, y:30,  w:100,h:56,label:'MSE Loss',       sub:'||ε-ε_θ||²',        col:'#e65100', frozen:false},
+
+        // Second row: backward pass
+        {x:790, y:160, w:100,h:56,label:'Backward',       sub:'∂L/∂θ',             col:'#e94560', frozen:false},
+        {x:660, y:160, w:110,h:56,label:'LoRA Grad',      sub:'∂L/∂B, ∂L/∂A',     col:'#f5a623', frozen:false},
+        {x:530, y:160, w:110,h:56,label:'CN Grad',        sub:'∂L/∂W_cn',          col:'#c62828', frozen:false},
+        {x:400, y:160, w:110,h:56,label:'AdamW Step',     sub:'update θ',          col:'#00897b', frozen:false},
+        {x:270, y:160, w:110,h:56,label:'Checkpoint',     sub:'save if FID↓',      col:'#1b5e20', frozen:false},
+        {x:140, y:160, w:110,h:56,label:'Evaluate',       sub:'FID/SSIM/mAP',      col:'#0d47a1', frozen:false},
+        {x:10,  y:160, w:110,h:56,label:'Loop',           sub:'next batch',        col:'#37474f', frozen:false},
+    ];
+
+    // Forward path (top row left→right)
+    var fwdPath = stages.slice(0,7).map(function(s){ return {x:s.x+s.w/2, y:s.y+s.h/2}; });
+    // Backward path (bottom row right→left)
+    var bwdPath = stages.slice(7).map(function(s){ return {x:s.x+s.w/2, y:s.y+s.h/2}; });
+
+    // Signal dots
+    var fwdDots = [{t:0,col:'#4fc3f7',speed:0.007},{t:0.4,col:'#4fc3f7',speed:0.007},{t:0.7,col:'#e94560',speed:0.009}];
+    var bwdDots = [{t:0,col:'#f5a623',speed:0.008},{t:0.5,col:'#e94560',speed:0.009}];
+
+    function lerp(a,b,frac){ return {x:a.x+(b.x-a.x)*frac, y:a.y+(b.y-a.y)*frac}; }
+    function getDotPos(path,frac){
+        var segs=path.length-1;
+        var seg=Math.min(Math.floor(frac*segs),segs-1);
+        return lerp(path[seg],path[seg+1],(frac*segs)-seg);
+    }
+
+    function drawStage(s){
+        // glow for active (not frozen)
+        if(!s.frozen){ ctx.shadowColor=s.col; ctx.shadowBlur=8; }
+        var grad=ctx.createLinearGradient(s.x,s.y,s.x+s.w,s.y+s.h);
+        grad.addColorStop(0,s.col); grad.addColorStop(1,s.col+'88');
+        ctx.fillStyle=grad;
+        ctx.beginPath();
+        if(ctx.roundRect) ctx.roundRect(s.x,s.y,s.w,s.h,8); else ctx.rect(s.x,s.y,s.w,s.h);
+        ctx.fill(); ctx.shadowBlur=0;
+
+        if(s.frozen){
+            ctx.strokeStyle='rgba(255,255,255,0.2)'; ctx.lineWidth=1.5; ctx.setLineDash([3,3]);
+            ctx.strokeRect(s.x,s.y,s.w,s.h); ctx.setLineDash([]);
+            ctx.fillStyle='rgba(255,255,255,0.3)'; ctx.font='bold 7px Segoe UI'; ctx.textAlign='right';
+            ctx.fillText('🔒',s.x+s.w-4,s.y+13);
+        }
+
+        ctx.fillStyle='white'; ctx.font='bold 10px Segoe UI'; ctx.textAlign='center';
+        ctx.fillText(s.label, s.x+s.w/2, s.y+s.h/2-3);
+        ctx.fillStyle='rgba(255,255,255,0.55)'; ctx.font='8.5px Segoe UI';
+        ctx.fillText(s.sub, s.x+s.w/2, s.y+s.h/2+13);
+    }
+
+    function drawArrowPath(path, col, dashed, dashOff){
+        ctx.strokeStyle=col; ctx.lineWidth=2;
+        if(dashed){ ctx.setLineDash([5,4]); ctx.lineDashOffset=dashOff; }
+        ctx.beginPath();
+        ctx.moveTo(path[0].x, path[0].y);
+        for(var i=1;i<path.length;i++) ctx.lineTo(path[i].x, path[i].y);
+        ctx.stroke(); ctx.setLineDash([]); ctx.lineDashOffset=0;
+    }
+
+    // Loss → backward vertical connector
+    function drawVertConnector(){
+        ctx.strokeStyle='#e94560'; ctx.lineWidth=2; ctx.setLineDash([4,3]);
+        ctx.lineDashOffset=-(t*30)%14;
+        ctx.beginPath(); ctx.moveTo(840,86); ctx.lineTo(840,160); ctx.stroke();
+        ctx.setLineDash([]); ctx.lineDashOffset=0;
+        ctx.fillStyle='#e94560'; ctx.beginPath(); ctx.arc(840,160,5,0,Math.PI*2); ctx.fill();
+    }
+
+    function animate(){
+        t+=0.016;
+        ctx.fillStyle='#0d0d1a'; ctx.fillRect(0,0,W,H);
+
+        // Row labels
+        ctx.fillStyle='rgba(79,195,247,0.4)'; ctx.font='bold 10px Segoe UI'; ctx.textAlign='left';
+        ctx.fillText('▸ FORWARD PASS',10,16);
+        ctx.fillStyle='rgba(245,166,35,0.4)';
+        ctx.fillText('▸ BACKWARD PASS',10,152);
+
+        // Arrow paths
+        drawArrowPath(fwdPath,'rgba(79,195,247,0.3)',false,0);
+        drawArrowPath(bwdPath,'rgba(245,166,35,0.3)',true,-(t*30)%18);
+        drawVertConnector();
+
+        // Stages
+        stages.forEach(drawStage);
+
+        // Forward dots
+        fwdDots.forEach(function(d){
+            d.t=(d.t+d.speed)%1;
+            var pos=getDotPos(fwdPath,d.t);
+            var pulse=0.6+0.4*Math.abs(Math.sin(t*4));
+            ctx.shadowColor=d.col; ctx.shadowBlur=12*pulse;
+            ctx.fillStyle=d.col; ctx.beginPath(); ctx.arc(pos.x,pos.y,5,0,Math.PI*2); ctx.fill();
+            ctx.shadowBlur=0;
+        });
+
+        // Backward dots
+        bwdDots.forEach(function(d){
+            d.t=(d.t+d.speed)%1;
+            var pos=getDotPos(bwdPath,d.t);
+            var pulse=0.6+0.4*Math.abs(Math.sin(t*3));
+            ctx.shadowColor=d.col; ctx.shadowBlur=12*pulse;
+            ctx.fillStyle=d.col; ctx.beginPath(); ctx.arc(pos.x,pos.y,5,0,Math.PI*2); ctx.fill();
+            ctx.shadowBlur=0;
+        });
+
+        // legend
+        var leg=[{col:'🔒 grey',label:'Frozen (no grad)'},{col:'#4fc3f7',label:'Forward signal'},{col:'#f5a623',label:'Backward gradient'},{col:'#e94560',label:'Loss → backward'}];
+        ctx.fillStyle='rgba(15,15,30,0.85)';
+        ctx.beginPath(); if(ctx.roundRect) ctx.roundRect(10,248,380,80,8); else ctx.rect(10,248,380,80); ctx.fill();
+        ctx.fillStyle='rgba(255,255,255,0.6)'; ctx.font='bold 10px Segoe UI'; ctx.textAlign='left';
+        ctx.fillText('LEGEND',22,268);
+        var li=[
+            {x:22,col:'#455a64',label:'Frozen block (dashed border, 🔒)'},
+            {x:22,col:'#f5a623',label:'Trainable block (solid border)'},
+            {x:220,col:'#4fc3f7',label:'Forward data flow (blue dots)'},
+            {x:220,col:'#e94560',label:'Backward gradient (gold/red)'},
+        ];
+        li.forEach(function(item,i){
+            var lx=item.x, ly=282+(Math.floor(i/2)*18);
+            ctx.fillStyle=item.col; ctx.fillRect(lx,ly-7,12,9);
+            ctx.fillStyle='rgba(255,255,255,0.75)'; ctx.font='8.5px Segoe UI';
+            ctx.fillText(item.label, lx+16, ly);
+        });
+
+        // step counter
+        var step=Math.floor((t*30)%50001);
+        ctx.fillStyle='rgba(15,15,30,0.85)';
+        ctx.beginPath(); if(ctx.roundRect) ctx.roundRect(410,248,240,80,8); else ctx.rect(410,248,240,80); ctx.fill();
+        ctx.fillStyle='#4fc3f7'; ctx.font='bold 11px Segoe UI'; ctx.textAlign='center';
+        ctx.fillText('Training Progress', 530, 268);
+        ctx.fillStyle='#f5a623'; ctx.font='bold 22px Segoe UI';
+        ctx.fillText('Step '+step.toLocaleString(), 530, 300);
+        var lossVal=(2.8*Math.exp(-step/15000)+0.12+Math.random()*0.04).toFixed(4);
+        ctx.fillStyle='#00d2a0'; ctx.font='11px Segoe UI';
+        ctx.fillText('Loss: '+lossVal, 530, 320);
+
+        requestAnimationFrame(animate);
+    }
+    animate();
+})();
+
+/* ── CANVAS D: Dataset sample grid ── */
+(function(){
+    var c = document.getElementById('datasetCanvas');
+    if(!c) return;
+    var ctx = c.getContext('2d');
+    var W=c.width, H=c.height;
+    var t=0;
+    var rows=4, cols=5;
+    var cw=W/cols, ch=H/rows;
+
+    // Procedural texture generators
+    function drawCleanWall(ctx,x,y,w,h,seed,t){
+        // Brick-like texture
+        var bw=w/5, bh=h/4;
+        for(var r=0;r<5;r++){
+            for(var col=0;col<6;col++){
+                var off=(r%2)*bw*0.5;
+                var bx=x+col*bw-off;
+                var by=y+r*bh;
+                var hue=20+seed%20;
+                var light=30+Math.abs(Math.sin(seed+r*col*0.3))*20;
+                ctx.fillStyle='hsl('+hue+',30%,'+light+'%)';
+                ctx.fillRect(bx+1,by+1,bw-2,bh-2);
+                ctx.strokeStyle='rgba(0,0,0,0.3)'; ctx.lineWidth=1;
+                ctx.strokeRect(bx+1,by+1,bw-2,bh-2);
+            }
+        }
+    }
+
+    function drawEdgeMap(ctx,x,y,w,h,seed){
+        ctx.fillStyle='#111'; ctx.fillRect(x,y,w,h);
+        ctx.strokeStyle='rgba(255,255,255,0.8)'; ctx.lineWidth=1;
+        // horizontal mortar lines
+        for(var r=1;r<4;r++){
+            ctx.beginPath(); ctx.moveTo(x,y+r*(h/4)); ctx.lineTo(x+w,y+r*(h/4)); ctx.stroke();
+        }
+        // vertical brick lines
+        for(var col=1;col<5;col++){
+            var off=(seed%2)*(w/10);
+            ctx.beginPath(); ctx.moveTo(x+col*(w/5)+off,y); ctx.lineTo(x+col*(w/5)+off,y+h/4); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(x+col*(w/5)-off,y+h/4); ctx.lineTo(x+col*(w/5)-off,y+2*h/4); ctx.stroke();
+        }
+    }
+
+    function drawMask(ctx,x,y,w,h,seed,defectType){
+        ctx.fillStyle='#000'; ctx.fillRect(x,y,w,h);
+        ctx.fillStyle='white';
+        if(defectType===0){ // crack
+            ctx.beginPath(); ctx.moveTo(x+w*0.3,y+h*0.1);
+            ctx.lineTo(x+w*0.35,y+h*0.4); ctx.lineTo(x+w*0.4,y+h*0.7); ctx.lineTo(x+w*0.5,y+h*0.9);
+            ctx.lineWidth=3+seed%3; ctx.strokeStyle='white'; ctx.stroke();
+        } else if(defectType===1){ // blob spall
+            ctx.beginPath(); ctx.ellipse(x+w*0.5,y+h*0.5,w*0.25+seed%10,h*0.2+seed%8,0.3,0,Math.PI*2); ctx.fill();
+        } else if(defectType===2){ // region
+            ctx.fillRect(x+w*0.2,y+h*0.3,w*0.6,h*0.4);
+        } else { // corner
+            ctx.beginPath(); ctx.moveTo(x+w*0.1,y+h*0.1); ctx.lineTo(x+w*0.5,y+h*0.1);
+            ctx.lineTo(x+w*0.3,y+h*0.6); ctx.closePath(); ctx.fill();
+        }
+    }
+
+    function drawDepth(ctx,x,y,w,h,seed){
+        var grd=ctx.createRadialGradient(x+w/2+seed%20-10,y+h/2,5,x+w/2,y+h/2,w*0.7);
+        grd.addColorStop(0,'#eee'); grd.addColorStop(0.4,'#999'); grd.addColorStop(1,'#222');
+        ctx.fillStyle=grd; ctx.fillRect(x,y,w,h);
+    }
+
+    function drawSynthetic(ctx,x,y,w,h,seed,defectType,t){
+        // base wall
+        drawCleanWall(ctx,x,y,w,h,seed,t);
+        // overlay defect with color
+        var defectColors=['rgba(60,30,10,0.7)','rgba(40,40,40,0.8)','rgba(0,80,0,0.6)','rgba(180,80,0,0.6)'];
+        ctx.save();
+        ctx.globalAlpha=0.7+0.1*Math.abs(Math.sin(t+seed));
+        ctx.fillStyle=defectColors[defectType%4];
+        if(defectType===0){
+            ctx.beginPath(); ctx.moveTo(x+w*0.3,y+h*0.1);
+            ctx.lineTo(x+w*0.35,y+h*0.4); ctx.lineTo(x+w*0.4,y+h*0.7); ctx.lineTo(x+w*0.5,y+h*0.9);
+            ctx.lineWidth=4+seed%3; ctx.strokeStyle=defectColors[0]; ctx.stroke();
+        } else if(defectType===1){
+            ctx.beginPath(); ctx.ellipse(x+w*0.5,y+h*0.5,w*0.22+seed%8,h*0.18+seed%6,0.3,0,Math.PI*2); ctx.fill();
+        } else {
+            ctx.fillRect(x+w*0.2,y+h*0.3,w*0.55,h*0.35);
+        }
+        ctx.restore();
+    }
+
+    var seeds=[17,42,73,11];
+    var defectTypes=[0,1,2,3]; // crack, spall, efflorescence, biological
+
+    function animate(){
+        t+=0.012;
+        ctx.fillStyle='#111'; ctx.fillRect(0,0,W,H);
+
+        for(var r=0;r<rows;r++){
+            var seed=seeds[r];
+            var dtype=defectTypes[r];
+            var y=r*ch;
+
+            // col 0: clean wall
+            ctx.save(); ctx.beginPath(); ctx.rect(0*cw,y,cw,ch); ctx.clip();
+            drawCleanWall(ctx,0*cw+1,y+1,cw-2,ch-2,seed,t);
+            ctx.restore();
+
+            // col 1: edge map
+            ctx.save(); ctx.beginPath(); ctx.rect(1*cw,y,cw,ch); ctx.clip();
+            drawEdgeMap(ctx,1*cw+1,y+1,cw-2,ch-2,seed);
+            ctx.restore();
+
+            // col 2: defect mask
+            ctx.save(); ctx.beginPath(); ctx.rect(2*cw,y,cw,ch); ctx.clip();
+            drawMask(ctx,2*cw+1,y+1,cw-2,ch-2,seed,dtype);
+            ctx.restore();
+
+            // col 3: depth
+            ctx.save(); ctx.beginPath(); ctx.rect(3*cw,y,cw,ch); ctx.clip();
+            drawDepth(ctx,3*cw+1,y+1,cw-2,ch-2,seed);
+            ctx.restore();
+
+            // col 4: synthetic output
+            ctx.save(); ctx.beginPath(); ctx.rect(4*cw,y,cw,ch); ctx.clip();
+            drawSynthetic(ctx,4*cw+1,y+1,cw-2,ch-2,seed,dtype,t);
+            // animated "generation" scanline effect
+            var scanY=y+(((t*30+r*20)%(ch+20))-10);
+            var scanGrad=ctx.createLinearGradient(4*cw,scanY-6,4*cw,scanY+6);
+            scanGrad.addColorStop(0,'rgba(79,195,247,0)');
+            scanGrad.addColorStop(0.5,'rgba(79,195,247,0.3)');
+            scanGrad.addColorStop(1,'rgba(79,195,247,0)');
+            ctx.fillStyle=scanGrad; ctx.fillRect(4*cw,scanY-6,cw,12);
+            ctx.restore();
+
+            // row divider
+            if(r>0){ ctx.strokeStyle='rgba(255,255,255,0.15)'; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); }
+        }
+
+        // column dividers
+        for(var col=1;col<cols;col++){
+            ctx.strokeStyle='rgba(255,255,255,0.15)'; ctx.lineWidth=1;
+            ctx.beginPath(); ctx.moveTo(col*cw,0); ctx.lineTo(col*cw,H); ctx.stroke();
+        }
+
+        // defect type labels on left
+        var labels=['Crack','Spalling','Efflor.','Bio Growth'];
+        for(var r=0;r<rows;r++){
+            ctx.fillStyle='rgba(245,166,35,0.8)'; ctx.font='bold 9px Segoe UI'; ctx.textAlign='left';
+            ctx.fillText(labels[r], 4, r*ch+12);
+        }
+
+        requestAnimationFrame(animate);
+    }
+    animate();
+})();
+(function(){
+    var c = document.getElementById('archCanvas');
+    if(!c) return;
+    var ctx = c.getContext('2d');
+    var W=c.width, H=c.height;
+    var t=0;
+
+    var blocks = [
+        {x:20,  y:30,  w:100,h:52,label:'Noisy z_t',  sub:'latent',     col:'#1565c0', layer:'input'},
+        {x:130, y:30,  w:80, h:52,label:'Timestep t', sub:'embed',      col:'#6a1b9a', layer:'input'},
+        {x:220, y:30,  w:100,h:52,label:'Text τ',     sub:'CLIP embed', col:'#bf360c', layer:'input'},
+        {x:330, y:30,  w:110,h:52,label:'Hint c',     sub:'edge/mask',  col:'#880e4f', layer:'controlnet'},
+        {x:20,  y:130, w:100,h:52,label:'SD Enc 1',   sub:'64×64',      col:'#455a64', layer:'frozen'},
+        {x:130, y:150, w:100,h:52,label:'SD Enc 2',   sub:'32×32',      col:'#455a64', layer:'frozen'},
+        {x:240, y:170, w:100,h:52,label:'SD Enc 3',   sub:'16×16',      col:'#455a64', layer:'frozen'},
+        {x:350, y:190, w:100,h:52,label:'Bottleneck', sub:'8×8',        col:'#263238', layer:'frozen'},
+        {x:460, y:170, w:100,h:52,label:'SD Dec 3',   sub:'16×16',      col:'#37474f', layer:'frozen'},
+        {x:570, y:150, w:100,h:52,label:'SD Dec 2',   sub:'32×32',      col:'#37474f', layer:'frozen'},
+        {x:680, y:130, w:100,h:52,label:'SD Dec 1',   sub:'64×64',      col:'#37474f', layer:'frozen'},
+        {x:790, y:130, w:90, h:52,label:'Out Conv',   sub:'ε pred',     col:'#1b5e20', layer:'frozen'},
+        {x:20,  y:310, w:100,h:52,label:'CN Enc 1',   sub:'trainable',  col:'#b71c1c', layer:'controlnet'},
+        {x:130, y:330, w:100,h:52,label:'CN Enc 2',   sub:'trainable',  col:'#b71c1c', layer:'controlnet'},
+        {x:240, y:350, w:100,h:52,label:'CN Enc 3',   sub:'trainable',  col:'#b71c1c', layer:'controlnet'},
+        {x:350, y:370, w:100,h:52,label:'CN Bot.',    sub:'trainable',  col:'#7b1513', layer:'controlnet'},
+        {x:20,  y:420, w:100,h:32,label:'ZeroConv 1', sub:'',           col:'#e65100', layer:'controlnet'},
+        {x:130, y:420, w:100,h:32,label:'ZeroConv 2', sub:'',           col:'#e65100', layer:'controlnet'},
+        {x:240, y:420, w:100,h:32,label:'ZeroConv 3', sub:'',           col:'#e65100', layer:'controlnet'},
+        {x:350, y:420, w:100,h:32,label:'ZeroConv B', sub:'',           col:'#e65100', layer:'controlnet'},
+    ];
+
+    /* indices of blocks that carry LoRA adapters on their attention projections */
+    var loraIdxs = [4,5,6,7,8,9,10,12,13,14,15];
+
+    /* dot paths: trace signal through each processing row */
+    var mainPath = [
+        {x:70,y:56},{x:170,y:56},{x:270,y:56},
+        {x:70,y:156},{x:180,y:176},{x:290,y:196},{x:400,y:216},
+        {x:510,y:196},{x:620,y:176},{x:730,y:156},{x:835,y:156}
+    ];
+    var cnPath = [
+        {x:385,y:56},
+        {x:70,y:336},{x:180,y:356},{x:290,y:376},{x:400,y:396},
+        {x:70,y:436},{x:180,y:436},{x:290,y:436},{x:400,y:436},
+        {x:400,y:216}
+    ];
+
+    var mainDots=[{t:0,col:'#4fc3f7',speed:0.005},{t:0.4,col:'#4fc3f7',speed:0.005},{t:0.75,col:'#00d2a0',speed:0.005}];
+    var cnDots  =[{t:0,col:'#e94560',speed:0.006},{t:0.55,col:'#f5a623',speed:0.006}];
+
+    function lerp2(a,b,f){ return {x:a.x+(b.x-a.x)*f, y:a.y+(b.y-a.y)*f}; }
+    function getDotPos(path,frac){
+        var segs=path.length-1;
+        var seg=Math.min(Math.floor(frac*segs),segs-1);
+        return lerp2(path[seg],path[seg+1],(frac*segs)-seg);
+    }
+
+    function drawBlock(b){
+        var isFrozen=(b.layer==='frozen');
+        if(!isFrozen){ ctx.shadowColor=b.col; ctx.shadowBlur=8; }
+        var grad=ctx.createLinearGradient(b.x,b.y,b.x+b.w,b.y+b.h);
+        grad.addColorStop(0,b.col); grad.addColorStop(1,b.col+'88');
+        ctx.fillStyle=grad;
+        ctx.beginPath();
+        if(ctx.roundRect) ctx.roundRect(b.x,b.y,b.w,b.h,6); else ctx.rect(b.x,b.y,b.w,b.h);
+        ctx.fill(); ctx.shadowBlur=0;
+        if(isFrozen){
+            ctx.strokeStyle='rgba(255,255,255,0.18)'; ctx.lineWidth=1; ctx.setLineDash([3,2]);
+            ctx.strokeRect(b.x,b.y,b.w,b.h); ctx.setLineDash([]);
+        }
+        ctx.fillStyle='white'; ctx.font='bold 9px Segoe UI'; ctx.textAlign='center';
+        ctx.fillText(b.label, b.x+b.w/2, b.y+b.h/2+(b.sub?-3:4));
+        if(b.sub){ ctx.fillStyle='rgba(255,255,255,0.5)'; ctx.font='7.5px Segoe UI'; ctx.fillText(b.sub, b.x+b.w/2, b.y+b.h/2+10); }
+    }
+
+    function drawLoraOverlay(b){
+        var pulse=0.2+0.25*Math.abs(Math.sin(t*1.8+b.x*0.02));
+        ctx.strokeStyle='rgba(245,166,35,'+pulse+')';
+        ctx.lineWidth=2; ctx.setLineDash([4,3]); ctx.lineDashOffset=-(t*18)%14;
+        ctx.strokeRect(b.x-3,b.y-3,b.w+6,b.h+6);
+        ctx.setLineDash([]); ctx.lineDashOffset=0;
+        ctx.fillStyle='rgba(245,166,35,0.7)'; ctx.font='bold 7px Segoe UI'; ctx.textAlign='right';
+        ctx.fillText('LoRA', b.x+b.w-2, b.y+9);
+    }
+
+    function drawDot(pos,col){
+        var pulse=0.6+0.4*Math.abs(Math.sin(t*4));
+        ctx.shadowColor=col; ctx.shadowBlur=14*pulse;
+        ctx.fillStyle=col; ctx.beginPath(); ctx.arc(pos.x,pos.y,5,0,Math.PI*2); ctx.fill();
+        ctx.shadowBlur=0;
+    }
+
+    function animate(){
+        t+=0.016;
+        ctx.fillStyle='#0d0d1a'; ctx.fillRect(0,0,W,H);
+
+        /* row labels */
+        ctx.font='bold 9px Segoe UI'; ctx.textAlign='left';
+        ctx.fillStyle='rgba(102,126,234,0.4)'; ctx.fillText('INPUTS', 22, 22);
+        ctx.fillStyle='rgba(69,90,100,0.5)';   ctx.fillText('FROZEN SD U-NET', 22, 116);
+        ctx.fillStyle='rgba(183,28,28,0.6)';   ctx.fillText('CONTROLNET BRANCH', 22, 296);
+        ctx.fillStyle='rgba(230,81,0,0.5)';    ctx.fillText('ZERO CONVOLUTIONS (init=0)', 22, 406);
+
+        blocks.forEach(function(b){ drawBlock(b); });
+        loraIdxs.forEach(function(i){ if(blocks[i]) drawLoraOverlay(blocks[i]); });
+
+        mainDots.forEach(function(d){
+            d.t=(d.t+d.speed)%1;
+            drawDot(getDotPos(mainPath,d.t),d.col);
+        });
+        cnDots.forEach(function(d){
+            d.t=(d.t+d.speed)%1;
+            drawDot(getDotPos(cnPath,d.t),d.col);
+        });
+
+        /* legend */
+        ctx.fillStyle='rgba(10,10,25,0.92)';
+        ctx.beginPath();
+        if(ctx.roundRect) ctx.roundRect(W-188,H-118,178,108,8); else ctx.rect(W-188,H-118,178,108);
+        ctx.fill();
+        var li=[
+            {col:'#455a64',txt:'Frozen SD'},
+            {col:'#b71c1c',txt:'ControlNet'},
+            {col:'#e65100',txt:'ZeroConv'},
+            {col:'#f5a623',txt:'LoRA border'},
+            {col:'#4fc3f7',txt:'SD signal'},
+            {col:'#e94560',txt:'CN signal'},
+        ];
+        ctx.fillStyle='rgba(255,255,255,0.6)'; ctx.font='bold 9px Segoe UI'; ctx.textAlign='left';
+        ctx.fillText('LEGEND', W-178, H-103);
+        li.forEach(function(item,i){
+            var lx=W-178+(Math.floor(i/3)*87), ly=H-87+(i%3)*20;
+            ctx.fillStyle=item.col; ctx.fillRect(lx,ly-8,9,9);
+            ctx.fillStyle='rgba(255,255,255,0.75)'; ctx.font='8px Segoe UI';
+            ctx.fillText(item.txt, lx+13, ly);
+        });
+
+        requestAnimationFrame(animate);
+    }
+    animate();
+})();
+</script>
+</body>
+</html>
+
+    var loraOverlays = [
+        {x:20,y:130},{x:130,y:150},{x:240,y:170},{x:350,y:190},
+        {x:460,y:170},{x:570,y:150},{x:680,y:130},
+        {x:20,y:310},{x:130,y:330},{x:240,y:350},{x:350,y:370},
+    ];
+
+    var dots = [
+        {path:[{x:70,y:56},{x:70,y:130},{x:180,y:176},{x:290,y:196},{x:400,y:216},{x:510,y:196},{x:620,y:176},{x:730,y:156},{x:835,y:156}], t:0,   col:'#4fc3f7', speed:0.006},
+        {path:[{x:385,y:82},{x:70,y:310},{x:70,y:420},{x:510,y:196}], t:0,   col:'#e94560', speed:0.009},
+        {path:[{x:70,y:156},{x:180,y:176},{x:290,y:196},{x:510,y:196}], t:0.5, col:'#f5a623', speed:0.007},
+    ];
+
+    function lerp(a,b,frac){ return {x:a.x+(b.x-a.x)*frac, y:a.y+(b.y-a.y)*frac}; }
+    function getDotPos(path,frac){
+        var segs=path.length-1;
+        var seg=Math.min(Math.floor(frac*segs),segs-1);
+        return lerp(path[seg],path[seg+1],(frac*segs)-seg);
+    }
+
+    function drawBlock(b){
+        if(b.layer==='frozen'){ ctx.shadowColor=b.col; ctx.shadowBlur=6; }
+        var grad=ctx.createLinearGradient(b.x,b.y,b.x+b.w,b.y+b.h);
+        grad.addColorStop(0,b.col); grad.addColorStop(1,b.col+'99');
+        ctx.fillStyle=grad;
+        ctx.beginPath();
+        if(ctx.roundRect) ctx.roundRect(b.x,b.y,b.w,b.h,7); else ctx.rect(b.x,b.y,b.w,b.h);
+        ctx.fill(); ctx.shadowBlur=0;
+        ctx.fillStyle='white'; ctx.font='bold 10px Segoe UI'; ctx.textAlign='center';
+        ctx.fillText(b.label,b.x+b.w/2,b.y+b.h/2-3);
+        if(b.sub){ ctx.fillStyle='rgba(255,255,255,0.55)'; ctx.font='9px Segoe UI'; ctx.fillText(b.sub,b.x+b.w/2,b.y+b.h/2+11); }
+    }
+
+    function drawLoraOverlay(lx,ly){
+        var pulse=0.4+0.6*Math.abs(Math.sin(t*2+lx*0.01));
+        ctx.strokeStyle='rgba(245,166,35,'+pulse+')'; ctx.lineWidth=2; ctx.setLineDash([3,3]);
+        ctx.strokeRect(lx-3,ly-3,106,58); ctx.setLineDash([]);
+        ctx.fillStyle='rgba(245,166,35,'+pulse+')'; ctx.font='bold 8px Segoe UI'; ctx.textAlign='left';
+        ctx.fillText('LoRA',lx+2,ly-6);
+    }
+
+    function drawLegend(){
+        var items=[
+            {col:'#455a64',label:'Frozen SD backbone'},
+            {col:'#b71c1c',label:'ControlNet branch'},
+            {col:'#e65100',label:'Zero Convolution'},
+            {col:'#f5a623',label:'LoRA adapter'},
+            {col:'#4fc3f7',label:'SD signal flow'},
+            {col:'#e94560',label:'CN injection'},
+        ];
+        ctx.fillStyle='rgba(20,20,40,0.88)';
+        ctx.beginPath();
+        if(ctx.roundRect) ctx.roundRect(700,30,185,145,8); else ctx.rect(700,30,185,145);
+        ctx.fill();
+        ctx.fillStyle='white'; ctx.font='bold 10px Segoe UI'; ctx.textAlign='left';
+        ctx.fillText('LEGEND',714,50);
+        items.forEach(function(item,i){
+            var ly=65+i*19;
+            ctx.fillStyle=item.col; ctx.fillRect(714,ly-8,14,10);
+            ctx.fillStyle='rgba(255,255,255,0.8)'; ctx.font='9px Segoe UI';
+            ctx.fillText(item.label,733,ly);
+        });
+    }
+
+    function animate(){
+        t+=0.016;
+        ctx.fillStyle='#0d0d1a'; ctx.fillRect(0,0,W,H);
+
+        ctx.strokeStyle='rgba(255,255,255,0.05)'; ctx.lineWidth=1; ctx.setLineDash([4,4]);
+        ctx.beginPath(); ctx.moveTo(0,100); ctx.lineTo(680,100); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(0,285); ctx.lineTo(680,285); ctx.stroke();
+        ctx.setLineDash([]);
+
+        ctx.fillStyle='rgba(102,126,234,0.35)'; ctx.font='bold 10px Segoe UI'; ctx.textAlign='left';
+        ctx.fillText('▸ FROZEN SD U-NET',10,96);
+        ctx.fillStyle='rgba(233,69,96,0.35)';
+        ctx.fillText('▸ CONTROLNET BRANCH',10,281);
+
+        blocks.forEach(drawBlock);
+        loraOverlays.forEach(function(lo){ drawLoraOverlay(lo.x,lo.y); });
+
+        var injections=[
+            {from:{x:70,y:452},  to:{x:510,y:222}},
+            {from:{x:180,y:452}, to:{x:620,y:202}},
+            {from:{x:290,y:452}, to:{x:730,y:182}},
+            {from:{x:400,y:452}, to:{x:400,y:242}},
+        ];
+        injections.forEach(function(inj,idx){
+            ctx.strokeStyle='#00d2a0'; ctx.lineWidth=2;
+            ctx.setLineDash([5,4]); ctx.lineDashOffset=-(t*40+idx*15)%20;
+            ctx.beginPath(); ctx.moveTo(inj.from.x,inj.from.y); ctx.lineTo(inj.to.x,inj.to.y); ctx.stroke();
+            ctx.setLineDash([]); ctx.lineDashOffset=0;
+            ctx.fillStyle='#00d2a0'; ctx.beginPath(); ctx.arc(inj.to.x,inj.to.y,5,0,Math.PI*2); ctx.fill();
+        });
+
+        dots.forEach(function(d){
+            d.t=(d.t+d.speed)%1;
+            var pos=getDotPos(d.path,d.t);
+            var pulse=0.6+0.4*Math.abs(Math.sin(t*4));
+            ctx.shadowColor=d.col; ctx.shadowBlur=10*pulse;
+            ctx.fillStyle=d.col; ctx.beginPath(); ctx.arc(pos.x,pos.y,5,0,Math.PI*2); ctx.fill();
+            ctx.shadowBlur=0;
+        });
+
+        drawLegend();
+        requestAnimationFrame(animate);
+    }
+    animate();
+})();
+
+(function(){
+    var c = document.getElementById('paramBarCanvas');
+    if(!c) return;
+    var ctx = c.getContext('2d');
+    var W=c.width, H=c.height;
+    var methods = ['Full FT','LoRA r4','LoRA r64','LoHa','IA³','DB+LoRA'];
+    var pcts    = [100, 0.06, 2, 0.1, 0.01, 1.5];
+    var colors  = ['#e94560','#f5a623','#ffd740','#00d2a0','#4fc3f7','#9c27b0'];
+    var maxBar  = H - 70;
+    var barW    = 80;
+    var spacing = (W - 60) / methods.length;
+    var progress = 0;
+
+    function draw(p){
+        ctx.clearRect(0,0,W,H);
+        ctx.fillStyle='#0d0d1a';
+        ctx.fillRect(0,0,W,H);
+
+        // grid lines
+        for(var g=0; g<=5; g++){
+            var gy = 20 + (maxBar/5)*(5-g);
+            ctx.strokeStyle='rgba(255,255,255,0.07)';
+            ctx.lineWidth=1;
+            ctx.beginPath(); ctx.moveTo(40,gy); ctx.lineTo(W-10,gy); ctx.stroke();
+            ctx.fillStyle='rgba(255,255,255,0.35)';
+            ctx.font='10px Segoe UI';
+            ctx.textAlign='right';
+            ctx.fillText((g*20)+'%', 36, gy+4);
+        }
+
+        methods.forEach(function(m,i){
+            var x = 60 + i*spacing;
+            var barH = (pcts[i]/100) * maxBar * p;
+            var y = 20 + maxBar - barH;
+
+            // bar
+            var grad = ctx.createLinearGradient(0,y,0,y+barH);
+            grad.addColorStop(0, colors[i]);
+            grad.addColorStop(1, colors[i]+'44');
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            ctx.roundRect ? ctx.roundRect(x,y,barW,barH,4) : ctx.rect(x,y,barW,barH);
+            ctx.fill();
+
+            // method label
+            ctx.fillStyle = '#ccc';
+            ctx.font = 'bold 11px Segoe UI';
+            ctx.textAlign = 'center';
+            ctx.fillText(m, x+barW/2, H-8);
+
+            // value label
+            if(barH > 12){
+                ctx.fillStyle = 'white';
+                ctx.font = 'bold 10px Segoe UI';
+                ctx.fillText(pcts[i]+'%', x+barW/2, y-6);
+            }
+        });
+
+        // title
+        ctx.fillStyle='rgba(79,195,247,0.6)';
+        ctx.font='bold 12px Segoe UI';
+        ctx.textAlign='left';
+        ctx.fillText('% Trainable Parameters (log-scale impression)', 44, 14);
+    }
+
+    function animate(){
+        progress += 0.018;
+        if(progress >= 1) progress = 1;
+        draw(progress);
+        if(progress < 1) requestAnimationFrame(animate);
+    }
+    animate();
+})();
+</script>
+</body>
+</html>

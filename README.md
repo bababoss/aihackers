@@ -12,5 +12,6 @@ Explore our comprehensive guides for AI video generation and advanced techniques
 - 📈 **[BLR Growth Hackers Meetup](https://bababoss.github.io/aihackers/docs/bgh.html)** - Community for entrepreneurs & business growth leaders - Marketing, Sales, and Entrepreneurship Growth
 - 🧱 **[GenAI Photorealistic Wall-Surface Simulation](https://bababoss.github.io/aihackers/docs/genAIPhtotrealisticWallSurface.html)** - Research & innovation in diffusion-based generative models for photorealistic wall-surface simulation, defect synthesis, and domain adaptation
 - 🎛 **[ControlNet: Turning Diffusion into a Controllable Simulation Engine](https://bababoss.github.io/aihackers/docs/ControlNet_turns_diffusion_into_controllabl.html)** - Visual animated guide to ControlNet architecture, zero-convolution mechanics, defect synthesis pipeline, training strategy, and HuggingFace Diffusers integration
+- 🧬 **[Diffusion + ControlNet + LoRA: End-to-End Training Pipeline](https://bababoss.github.io/aihackers/docs/diffuer_controllnet_LORA_traing.html)** - Visual animated blog on PEFT–LoRA mechanics, combined architecture Canvas diagrams, construction dataset design, full animated training pipeline, and complete runnable training + inference code
 
 ---
